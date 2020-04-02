@@ -6,6 +6,7 @@ import Divider from "@material-ui/core/Divider";
 import servedImage from "../../../../../helpers/imagePathHelper";
 import ColorTag from "../../../../elements/ColorTag";
 import moment from "moment-timezone";
+import TagsContainer from "../../../../common/TagsContainer";
 
 const OverviewHeader = ({ classes, event, artists, venue, timezoneAbbr }) => {
 	const {
@@ -30,54 +31,6 @@ const OverviewHeader = ({ classes, event, artists, venue, timezoneAbbr }) => {
 	const promoImgStyle = {};
 	if (promo_image_url) {
 		promoImgStyle.backgroundImage = `url(${promo_image_url})`;
-	}
-	let tags = null;
-	if (cancelled_at) {
-		tags = <Typography className={classes.cancelled}>Cancelled</Typography>;
-	} else {
-		let onSaleTag = null;
-		let overrideTag = null;
-
-		if (eventEnded) {
-			onSaleTag = <ColorTag variant="disabled">Event ended</ColorTag>;
-		} else if (isOnSale && !override_status) {
-			onSaleTag = <ColorTag variant="green">On sale</ColorTag>;
-		} else if (is_external) {
-			onSaleTag = <ColorTag variant="green">External</ColorTag>;
-		}
-
-		if(override_status) {
-			if(override_status === "PurchaseTickets") {
-				overrideTag = <ColorTag variant="green">On Sale</ColorTag>;
-			} else if(override_status === "Rescheduled") {
-				overrideTag = <ColorTag variant="disabled">Postponed</ColorTag>;
-			} else if(override_status === "Ended") {
-				overrideTag = <ColorTag variant="disabled">Event Ended</ColorTag>;
-			} else {
-				overrideTag = <ColorTag variant="disabled">{override_status}</ColorTag>;
-			}
-		}
-
-		tags = (
-			<div className={classes.statusContainer}>
-				<ColorTag
-					style={{ marginRight: 10, borderRadius: 3 }}
-					variant={
-						isPublished || publishedDateAfterNowAndNotDraft
-							? "secondary"
-							: "disabled"
-					}
-				>
-					{isPublished
-						? "Published"
-						: publishedDateAfterNowAndNotDraft
-							? "Scheduled"
-							: "Draft"}
-				</ColorTag>
-				{onSaleTag}
-				{overrideTag}
-			</div>
-		);
 	}
 
 	function renderArtistSubtitle() {
@@ -109,7 +62,15 @@ const OverviewHeader = ({ classes, event, artists, venue, timezoneAbbr }) => {
 				<Typography className={classes.headerTitle}>{name}</Typography>
 				<div className={classes.justifyBetween}>
 					{renderArtistSubtitle()}
-					{tags}
+					<TagsContainer
+						cancelled={cancelled_at}
+						isOnSale={isOnSale}
+						eventEnded={eventEnded}
+						overrideStatus={override_status}
+						isPublished={isPublished}
+						publishedDateAfterNowAndNotDraft={publishedDateAfterNowAndNotDraft}
+						isExternal={is_external}
+					/>
 				</div>
 				<Divider className={classes.dividerStyle}/>
 				<div className={classes.headerEventDateInfo}>

@@ -15,6 +15,7 @@ import TicketTypeSalesBarChart from "../../../elements/charts/TicketTypeSalesBar
 import DateFlag from "../../../elements/event/DateFlag";
 import servedImage from "../../../../helpers/imagePathHelper";
 import optimizedImageUrl from "../../../../helpers/optimizedImageUrl";
+import TagsContainer from "../../../common/TagsContainer";
 
 const Total = ({ children, color, value, classes }) => (
 	<div>
@@ -59,51 +60,6 @@ const EventSummaryCard = props => {
 	const displayEventStartDate = eventDate.format("dddd, MMMM Do YYYY h:mm A");
 	const publishedDateAfterNowAndNotDraft = moment.utc(publishDate).isAfter(moment.utc()) && status !== "Draft";
 
-	let tags = null;
-	if (cancelled) {
-		tags = <Typography className={classes.cancelled}>Cancelled</Typography>;
-	} else {
-		let onSaleTag = null;
-		let overrideTag = null;
-
-		if (eventEnded) {
-			onSaleTag = <ColorTag variant="disabled">Event ended</ColorTag>;
-		} else if (isOnSale && !overrideStatus) {
-			onSaleTag = <ColorTag variant="green">On sale</ColorTag>;
-		} else if (isExternal) {
-			onSaleTag = <ColorTag variant="green">External</ColorTag>;
-		}
-
-		if(overrideStatus) {
-			if(overrideStatus === "PurchaseTickets") {
-				overrideTag = <ColorTag variant="green">On Sale</ColorTag>;
-			} else if(overrideStatus === "Rescheduled") {
-				overrideTag = <ColorTag variant="disabled">Postponed</ColorTag>;
-			} else if(overrideStatus === "Ended") {
-				overrideTag = <ColorTag variant="disabled">Event Ended</ColorTag>;
-			} else {
-				overrideTag = <ColorTag variant="disabled">{overrideStatus}</ColorTag>;
-			}
-		}
-
-		tags = (
-			<div className={classes.statusContainer}>
-				<ColorTag
-					style={{ marginRight: 10 }}
-					variant={isPublished || publishedDateAfterNowAndNotDraft ? "secondary" : "disabled"}
-				>
-					{isPublished
-						? "Published"
-						: publishedDateAfterNowAndNotDraft
-							? "Scheduled"
-							: "Draft"}
-				</ColorTag>
-				{onSaleTag}
-				{overrideTag}
-			</div>
-		);
-	}
-
 	return (
 		<Card variant="block">
 			<Grid container spacing={0}>
@@ -143,7 +99,15 @@ const EventSummaryCard = props => {
 							lg={5}
 							className={classes.bottomPadding}
 						>
-							{tags}
+							<TagsContainer
+								cancelled={cancelled}
+								isOnSale={isOnSale}
+								eventEnded={eventEnded}
+								overrideStatus={overrideStatus}
+								isPublished={isPublished}
+								publishedDateAfterNowAndNotDraft={publishedDateAfterNowAndNotDraft}
+								isExternal={isExternal}
+							/>
 						</Grid>
 
 						<Grid
