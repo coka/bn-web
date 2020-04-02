@@ -499,13 +499,12 @@ class EventDashboardContainer extends Component {
 			removeCardSidePadding
 		} = this.props;
 		const organizationId = user.currentOrganizationId;
-		let overrideTag = '';
 
 		if (!event) {
 			return <Loader/>;
 		}
 
-		const { id, publish_date, on_sale, localized_times, status, override_status } = event;
+		const { id, publish_date, on_sale, localized_times, status, override_status, cancelled_at, is_external } = event;
 		const isPublished = moment.utc(publish_date).isBefore(moment.utc());
 		const isOnSale = isPublished && moment.utc(on_sale).isBefore(moment.utc());
 
@@ -521,16 +520,49 @@ class EventDashboardContainer extends Component {
 		const publishedDateAfterNowAndNotDraft =
 			moment.utc(publish_date).isAfter(moment.utc()) && status !== "Draft";
 
-		if(override_status) {
-			if(override_status === "PurchaseTickets") {
-				overrideTag = <ColorTag variant="green">On Sale</ColorTag>;
-			} else if(override_status === "Rescheduled") {
-				overrideTag = <ColorTag variant="disabled">Postponed</ColorTag>;
-			} else if(override_status === "Ended") {
-				overrideTag = <ColorTag variant="disabled">Event Ended</ColorTag>;
-			} else {
-				overrideTag = <ColorTag variant="disabled">{override_status}</ColorTag>;
+		let tags = null;
+		if (cancelled_at) {
+			tags = <Typography className={classes.cancelled}>Cancelled</Typography>;
+		} else {
+			let onSaleTag = null;
+			let overrideTag = null;
+
+			if (eventEnded) {
+				onSaleTag = <ColorTag variant="disabled">Event ended</ColorTag>;
+			} else if (isOnSale && !override_status) {
+				onSaleTag = <ColorTag variant="green">On sale</ColorTag>;
+			} else if (is_external) {
+				onSaleTag = <ColorTag variant="green">External</ColorTag>;
 			}
+
+			if(override_status) {
+				if(override_status === "PurchaseTickets") {
+					overrideTag = <ColorTag variant="green">On Sale</ColorTag>;
+				} else if(override_status === "Rescheduled") {
+					overrideTag = <ColorTag variant="disabled">Postponed</ColorTag>;
+				} else if(override_status === "Ended") {
+					overrideTag = <ColorTag variant="disabled">Event Ended</ColorTag>;
+				} else {
+					overrideTag = <ColorTag variant="disabled">{override_status}</ColorTag>;
+				}
+			}
+
+			tags = (
+				<div className={classes.statusContainer}>
+					<ColorTag
+						style={{ marginRight: 10 }}
+						variant={isPublished || publishedDateAfterNowAndNotDraft ? "secondary" : "disabled"}
+					>
+						{isPublished
+							? "Published"
+							: publishedDateAfterNowAndNotDraft
+								? "Scheduled"
+								: "Draft"}
+					</ColorTag>
+					{onSaleTag}
+					{overrideTag}
+				</div>
+			);
 		}
 
 		return (
@@ -560,39 +592,7 @@ class EventDashboardContainer extends Component {
 						className={classes.rightHeaderOptions}
 					>
 						<div className={classes.tagsContainer}>
-							<div>
-								<ColorTag
-									style={{ marginRight: 10 }}
-									variant={
-										isPublished || publishedDateAfterNowAndNotDraft
-											? "secondary"
-											: "disabled"
-									}
-								>
-									{isPublished
-										? "Published"
-										: publishedDateAfterNowAndNotDraft
-											? "Scheduled"
-											: "Draft"}
-								</ColorTag>
-							</div>
-							<div>
-								{eventEnded  ? (
-									<ColorTag style={{ marginRight: 10 }} variant="disabled">
-										{"Event ended"}
-									</ColorTag>
-								) : !override_status && (
-									<ColorTag
-										style={{ marginRight: 10 }}
-										variant={isOnSale ? "green" : "disabled"}
-									>
-										{isOnSale ? "On sale" : "Off sale"}
-									</ColorTag>
-								)}
-							</div>
-							<div style={{ marginRight: 10 }}>
-								{overrideTag}
-							</div>
+							{tags}
 						</div>
 						{!eventEnded && user.hasScope("event:write") ? (
 							<Link to={`/admin/events/${event.id}/edit`}>
@@ -815,7 +815,8 @@ const styles = theme => {
 		},
 		tagsContainer: {
 			display: "flex",
-			justifyContent: "flex-start"
+			justifyContent: "flex-start",
+			marginRight: 10
 		},
 		menuDropdownContainer: {
 			//borderStyle: "solid",
