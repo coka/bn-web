@@ -1,10 +1,6 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
-import { Card, Typography, withStyles } from "@material-ui/core";
-import classNames from "classnames";
-import { urlPageParam } from "../pagination";
-import Bigneon from "../../../helpers/bigneon";
-import notifications from "../../../stores/notifications";
+import { Typography, withStyles } from "@material-ui/core";
 import announcements from "../../../stores/announcements";
 import { fontFamilyDemiBold } from "../../../config/theme";
 import { observer } from "mobx-react";
@@ -14,28 +10,37 @@ import user from "../../../stores/user";
 class AnnouncementBanner extends Component {
 	constructor(props) {
 		super(props);
-
-		this.state = {
-			announcements: []
-		};
 	}
 
 	componentDidMount() {
+		this.checkForAnnouncements();
+	}
+
+	checkForAnnouncements() {
 		if (user.currentOrganizationId) {
 			announcements.getOrgAnnouncements();
+		} else {
+			setTimeout(() => {
+				this.checkForAnnouncements();
+			}, 500);
 		}
 	}
 
 	render() {
 		const { classes } = this.props;
-		const { message } = announcements;
+		const { messages } = announcements;
 		return (
 			<div className={classes.root}>
-				{message ? (
+				{messages.length ? (
 					<div className={classes.bannerContainer}>
-						<Typography className={classes.bannerText}>
-							{message.message}
-						</Typography>
+						{messages.map((message, i) => {
+							return (
+								<Typography key={i} className={classes.bannerText}>
+									{message.message}
+								</Typography>
+							);
+						})}
+
 					</div>
 				) : null}
 			</div>

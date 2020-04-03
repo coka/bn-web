@@ -9,9 +9,7 @@ import {
 import SelectGroup from "../../../../../common/form/SelectGroup";
 import moment from "moment-timezone";
 import servedImage from "../../../../../../helpers/imagePathHelper";
-import {
-	TIME_FORMAT_MM_DD_YYYY_NO_TIMEZONE
-} from "../../../../../../helpers/time";
+import { TIME_FORMAT_MM_DD_YYYY_NO_TIMEZONE } from "../../../../../../helpers/time";
 import SendDialog from "./sections/SendDialog";
 import MainContent from "./sections/MainContent";
 import getPhoneOS from "../../../../../../helpers/getPhoneOS";
@@ -49,7 +47,8 @@ class Index extends Component {
 			hasEventStarted: true,
 			count: 1,
 			inProgress: false,
-			isNotificationAfterNow: true
+			isNotificationAfterNow: true,
+			updateNotification: false
 		};
 	}
 
@@ -79,12 +78,18 @@ class Index extends Component {
 			.events.broadcasts.index({ event_id: this.eventId })
 			.then(response => {
 				const { data } = response.data;
+				let broadcastSent = true;
+				let inProgress = false;
 				data.forEach(
-					({ notification_type, sent_quantity, opened_quantity }) => {
+					({ notification_type, sent_quantity, opened_quantity, status }) => {
 						if (notification_type === "LastCall") {
+							broadcastSent = status !== "Pending";
+							inProgress = status === "InProgress";
 							this.setState({
 								scheduleProgress: opened_quantity,
-								scheduleSent: sent_quantity
+								scheduleSent: sent_quantity,
+								inProgress,
+								broadcastSent
 							});
 						}
 					}
@@ -209,42 +214,18 @@ class Index extends Component {
 			});
 	}
 
-	sendNow(e) {
-		const { updateNotification, broadcastId, timezone } = this.state;
-		e.preventDefault();
-		let broadcastData = {};
-
-		this.submitAttempted = true;
-
-		this.setState({ isSending: true });
-
-		if (updateNotification && broadcastId) {
-			broadcastData = {
-				id: broadcastId,
-				notification_type: "LastCall",
-				send_at: null
-			};
-		} else {
-			broadcastData = {
-				event_id: this.eventId,
-				channel: "PushNotification",
-				notification_type: "LastCall",
-				send_at: null
-			};
-		}
-
-		updateNotification
-			? this.updateNotification(broadcastData)
-			: this.createNotification(broadcastData);
+	async sendNow(e) {
+		await this.onSend(e, null);
+		this.gradualTimer();
 	}
 
-	onSend(e) {
-		const { sendAt, updateNotification, broadcastId, timezone } = this.state;
-		e.preventDefault();
-		let broadcastData = {};
-
-		this.submitAttempted = true;
-
+	async sendScheduled(e) {
+		const { sendAt, timezone } = this.state;
+		const send_at = moment
+			.tz(sendAt, TIME_FORMAT_MM_DD_YYYY_NO_TIMEZONE, timezone)
+			.utc()
+			.format(moment.HTML5_FMT.DATETIME_LOCAL_MS);
+		this.setState({ sendAt: send_at });
 		if (!this.validateFields()) {
 			notifications.show({
 				message: "Invalid field.",
@@ -252,12 +233,18 @@ class Index extends Component {
 			});
 			return false;
 		}
+		await this.onSend(e, send_at);
+	}
+
+	async onSend(e, send_at) {
+		e.preventDefault(e);
+		const { updateNotification, broadcastId } = this.state;
+		let broadcastData;
+
+		this.submitAttempted = true;
 
 		this.setState({ isSending: true });
-		const send_at = moment
-			.tz(sendAt, TIME_FORMAT_MM_DD_YYYY_NO_TIMEZONE, timezone)
-			.utc()
-			.format(moment.HTML5_FMT.DATETIME_LOCAL_MS);
+
 		broadcastData = {
 			send_at,
 			notification_type: "LastCall"
@@ -275,65 +262,38 @@ class Index extends Component {
 			};
 		}
 
-		updateNotification
-			? this.updateNotification(broadcastData)
-			: this.createNotification(broadcastData);
+		await this.sendNotificationToServer(broadcastData, updateNotification);
 	}
 
-	createNotification(broadcastData) {
-		Bigneon()
-			.events.broadcasts.create(broadcastData)
-			.then(response => {
-				this.setState({
-					isSending: false,
-					openConfirmDialog: false,
-					lastCallMessage: "",
-					errors: {}
-				});
-				this.submitAttempted = false;
-				notifications.show({
-					message: "Notification created!",
-					variant: "success"
-				});
-				this.loadEventBroadcast();
-			})
-			.catch(error => {
-				this.setState({
-					isSending: false
-				});
-				notifications.showFromErrorResponse({
-					error,
-					defaultMessage: "Failed to create notification."
-				});
+	async sendNotificationToServer(broadcastData, isUpdate) {
+		try {
+			const response = isUpdate
+				? await Bigneon().broadcasts.update(broadcastData)
+				: await Bigneon().events.broadcasts.create(broadcastData);
+			this.setState({
+				isSending: false,
+				openConfirmDialog: false,
+				lastCallMessage: "",
+				errors: {}
 			});
-	}
-
-	updateNotification(broadcastData) {
-		Bigneon()
-			.broadcasts.update(broadcastData)
-			.then(response => {
-				this.setState({
-					isSending: false,
-					openConfirmDialog: false,
-					lastCallMessage: "",
-					errors: {}
-				});
-				this.submitAttempted = false;
-				notifications.show({
-					message: "Notification updated!",
-					variant: "success"
-				});
-				this.loadEventBroadcast();
-			})
-			.catch(error => {
-				this.setState({
-					isSending: false
-				});
-				notifications.showFromErrorResponse({
-					error,
-					defaultMessage: "Failed to update notifications."
-				});
+			this.submitAttempted = false;
+			notifications.show({
+				message: `Notification ${isUpdate ? "updated" : "created"}!`,
+				variant: "success"
 			});
+			this.loadEventBroadcast();
+			return response;
+		} catch (error) {
+			this.setState({
+				isSending: false
+			});
+			notifications.showFromErrorResponse({
+				error,
+				defaultMessage: `Failed to  ${
+					isUpdate ? "update" : "create"
+				} notification.`
+			});
+		}
 	}
 
 	onDialogClose() {
@@ -503,7 +463,7 @@ class Index extends Component {
 				isSending={isSending}
 				isCustom={isCustom}
 				renderTimes={this.renderTimes()}
-				onSend={this.onSend.bind(this)}
+				onSend={this.sendScheduled.bind(this)}
 				onAction={this.onAction.bind(this)}
 				onSendNow={this.onSendNow.bind(this)}
 				details={Details}
@@ -542,9 +502,7 @@ class Index extends Component {
 							</Typography>
 							<Typography className={classes.heading}>Last Call</Typography>
 						</div>
-						<Card className={classes.mobileContainer}>
-							{MainContentConst}
-						</Card>
+						<Card className={classes.mobileContainer}>{MainContentConst}</Card>
 					</Hidden>
 				</Container>
 			</div>

@@ -18,7 +18,7 @@ public class CreateOrganizationPage extends BasePage {
 	@FindBy(id = "phone")
 	private WebElement phoneNumberField;
 
-	@FindBy(xpath = "//body//main//div[./p[@id='timezone-error-text']]/div")
+	@FindBy(xpath = "//input[@id='timezone']/preceding-sibling::div[@role='button']")
 	private WebElement timeZoneDropDown;
 
 	@FindBy(id = "menu-timezone")

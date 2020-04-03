@@ -70,22 +70,22 @@ public class OrderDetailsComponent extends BaseComponent implements DataHolderPr
 		data.setEvent(getEventInfo());
 		return data;
 	}
-	
+
 	public Event getEventInfo() {
 		explicitWaitForVisiblity(container);
 		WebElement eventName = getAccessUtils().getChildElementFromParentLocatedBy(container, By.xpath(relativeEventNameXpath));
 		WebElement startDate = getAccessUtils().getChildElementFromParentLocatedBy(container, By.xpath(relativeDateTimeXpath));
 		Event event = new Event();
 		event.setEventName(eventName.getText().trim());
-		event.setDate(ProjectUtils.parseDateTime(ProjectUtils.SUCCESS_PURCHASE_PAGE_DATE_FORMAT, 
+		event.setDate(ProjectUtils.parseDateTime(ProjectUtils.SUCCESS_PURCHASE_PAGE_DATE_FORMAT,
 				startDate.getText().trim()));
 		return event;
 	}
-	
+
 	public Venue getVenueInfo() {
 		 WebElement location = getAccessUtils().getChildElementFromParentLocatedBy(container, By.xpath(relativeVenueLocationXpath));
 		 WebElement name= getAccessUtils().getChildElementFromParentLocatedBy(container, By.xpath(relativeVenueNameXpath));
-		 Venue venue = new VenueFormatter("A, L").parse(location.getText().trim());
+		 Venue venue = new VenueFormatter("A").parse(location.getText().trim());
 		 venue.setName(name.getText().trim());
 		 return venue;
 	}
@@ -97,7 +97,7 @@ public class OrderDetailsComponent extends BaseComponent implements DataHolderPr
 		user.setEmailAddress(email);
 		return user;
 	}
-	
+
 	public boolean isOrderTotalSumCorrect() {
 		BigDecimal total = new BigDecimal(0);
 		total = total.add(getSubtotal());
@@ -105,20 +105,20 @@ public class OrderDetailsComponent extends BaseComponent implements DataHolderPr
 		BigDecimal orderTotal = getOrderTotal();
 		return total.compareTo(orderTotal) == 0;
 	}
-	
+
 	public String getOrderNumber() {
 		WebElement orderNumberEl = getAccessUtils().getChildElementFromParentLocatedBy(container, By.xpath(relativeOrderNumberXpath));
 		return orderNumberEl.getText();
 	}
-	
-	public BigDecimal getSubtotal() { 
+
+	public BigDecimal getSubtotal() {
 		return getAccessUtils().getBigDecimalMoneyAmount(subtotalValue);
 	}
-	
+
 	public BigDecimal getTotalFees() {
 		return getAccessUtils().getBigDecimalMoneyAmount(totalFees);
 	}
-	
+
 	public BigDecimal getOrderTotal() {
 		return getAccessUtils().getBigDecimalMoneyAmount(orderTotal);
 	}

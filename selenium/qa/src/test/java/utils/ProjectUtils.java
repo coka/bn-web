@@ -25,12 +25,16 @@ public class ProjectUtils {
 
 	public static final String DATE_FORMAT = "MM/dd/yyyy";
 	public static final String TIME_FORMAT = "h:mm a";
+	public static final String TIME_FORMAT_FULL = "hh:mm a";
+	public static final String EVENT_OVERVIEW_TIME_FORMAT = "h:mm a z";
+	public static final String EVENT_OVERVIEW_PUBLISHED_ON_DATE_TIME_FORMAT = "MM/dd/yyyy h:mm a z";
 	public static final String CONCATINATED_DATE_FORMAT = "MMddyyyy";
 	public static final String ADMIN_EVENT_DATE_TIME_FORMAT = "EEEE, MMMM d yyyy h:mm a";
 	public static final String ADMIN_EVENT_MANAGE_ORDERS_ORDER_ROW = "MM/dd/yyyy h:mm a";
 	public static final String EVENT_RESULT_SUMMARY_DATE_TIME_FORMAT = "MMM d EEE, h:mm a";
 	public static final String SUCCESS_PURCHASE_PAGE_DATE_FORMAT = "EEE, MMM d, yyyy h:mm a z";
 	public static final String MANAGE_ORDER_HISTORY_ITEM_DATE_FORMAT = "EEE, MMM d, yyyy h:mm a";
+	public static final String EVENT_OVERVIEW_DATE_FORMAT = "EEE, MMM d, yyyy";
 	public static final String REPORTS_BOX_OFFICE_TITLE_DATE_FORMAT = "MMM dd, yyyy";
 	public static final String REPORTS_BOX_OFFICE_OPERATOR_TABLE_DATE = "MM/dd/yyyy h:mm a, z";
 	public static final String DATE_PICKER_MONTH_YEAR_FORMAT = "MMMM yyyy";
@@ -69,16 +73,21 @@ public class ProjectUtils {
 		LocalDate nextDate = newDay.plusDays(spanInDays);
 		return new DateRange(newDay, nextDate);
 	}
-	
+
 	public static String formatDate(String pattern, LocalDate date) {
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
 		return formatter.format(date);
 	}
-	
+
+	public static String formatTime(String pattern, LocalTime time) {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+		return formatter.format(time);
+	}
+
 	public static LocalDateTime parseDateTimeWithoutYear(String pattern, String dateTimeWithOutYear) {
 		return parseDateTimeWithoutYear(pattern, dateTimeWithOutYear, LocalDate.now().getYear());
 	}
-	
+
 	public static LocalDateTime parseDateTimeWithoutYear(String pattern, String dateTimeWithOutYear, Integer year) {
 		DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern(pattern)
 				.parseDefaulting(ChronoField.YEAR, year).toFormatter();
@@ -95,7 +104,7 @@ public class ProjectUtils {
 		LocalDateTime localDateTime = LocalDateTime.parse(removedOrdinalsDate, formater);
 		return localDateTime;
 	}
-	
+
 	public static ZonedDateTime parseZonedDateTime(String pattern, String dateTime) {
 		if (dateTime == null || dateTime.isEmpty()) {
 			return null;
@@ -104,9 +113,9 @@ public class ProjectUtils {
 		DateTimeFormatter formater = DateTimeFormatter.ofPattern(pattern);
 		ZonedDateTime localDateTime = ZonedDateTime.parse(removedOrdinalsDate, formater);
 		return localDateTime;
-		
+
 	}
-	
+
 	public static <T extends Comparable<? super T>> boolean isListOrdered(List<T> list) {
 		T previous = list.get(0);
 		for(T current : list) {
@@ -128,7 +137,7 @@ public class ProjectUtils {
 	/**
 	 * Parses date using provided pattern, also it removes ordinals like in 1st,
 	 * 2nd,.. 10th...
-	 * 
+	 *
 	 * @param pattern
 	 * @param date
 	 * @return
@@ -208,7 +217,7 @@ public class ProjectUtils {
 
 	public static String getTextForElementAndReplace(WebElement element, String oldChar, String newChar) {
 		String text = element.getText().trim();
-		return text.replace(oldChar, newChar);
+		return text.replace(oldChar, newChar).trim();
 
 	}
 
@@ -225,7 +234,7 @@ public class ProjectUtils {
 	 * It follows convention that suffix is last "_" found, that is discarder and
 	 * replaced with current date sequence. If no "_" is found date is appended to
 	 * given text parametar with "_" between date and text
-	 * 
+	 *
 	 * @param text
 	 * @return
 	 */
@@ -264,14 +273,14 @@ public class ProjectUtils {
 
 	/**
 	 * returns true if value is not null and not empty
-	 * 
+	 *
 	 * @param value
 	 * @return
 	 */
 	public static boolean isStringValid(String value) {
 		return value != null && !value.isEmpty();
 	}
-	
+
 	public static String getImageUrlFromStyleAttribute(WebElement element) {
 		String text = element.getAttribute("style");
 		Pattern pattern = Pattern.compile("url\\(*.*\\)");
@@ -282,10 +291,10 @@ public class ProjectUtils {
 			retVal = retVal.replace("url(\"", "");
 			retVal = retVal.replace("\")","");
 		}
-		
+
 		return retVal;
 	}
-	
+
 	public static boolean isMatch(String pattern, String text) {
 		Pattern p = Pattern.compile(pattern);
 		Matcher matcher = p.matcher(text);

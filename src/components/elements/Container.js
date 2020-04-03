@@ -25,7 +25,7 @@ import Footer from "./footers/FooterOne";
 import CaptureMissingEmail from "../pages/authentication/social/FacebookButton";
 import CaptureMissingEmailDialog from "../pages/authentication/CaptureMissingEmailDialog";
 import LandingFooter from "./footers/LandingFooter";
-import AnnouncementBanner from "./announcements/Banner";
+import AnnouncementBanner from "./announcements/AnnouncementBanner";
 
 const drawerWidth = 240;
 

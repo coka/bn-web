@@ -21,14 +21,14 @@ import pages.components.admin.organization.settings.OtherFeesComponent;
 import utils.MsgConstants;
 
 public class OrganizationStepsFacade extends BaseFacadeSteps {
-	
+
 	private AdminEventsPage adminEventPage;
 	private AdminOrganizationsPage organizationPage;
 	private CreateOrganizationPage createOrganizationPage;
 	private AdminSideBar adminSideBar;
-	
-	private String EDIT_ORGANIZATION_PAGE_KEY = "edit_organization_page"; 
-	
+
+	private String EDIT_ORGANIZATION_PAGE_KEY = "edit_organization_page";
+
 	private Map<String, Object> data;
 
 	public OrganizationStepsFacade(WebDriver driver) {
@@ -39,7 +39,7 @@ public class OrganizationStepsFacade extends BaseFacadeSteps {
 		this.adminSideBar = new AdminSideBar(driver);
 		this.data = new HashMap<>();
 	}
-	
+
 	public void updateSteps(Organization organization,boolean updateDetails ,boolean updateFees) {
 		thenUserIsOnOrganizationSettingsPage();
 		if (updateDetails)createOrganizationPage.fillFormAndConfirm(organization);
@@ -54,7 +54,7 @@ public class OrganizationStepsFacade extends BaseFacadeSteps {
 			}
 		}
 	}
-	
+
 	public boolean createOrganization(Organization org) {
 		boolean retVal = adminEventPage.isAtPage();
 		Header header = adminEventPage.getHeader();
@@ -66,28 +66,28 @@ public class OrganizationStepsFacade extends BaseFacadeSteps {
 		retVal = retVal && createOrganizationPage.checkPopupMessage();
 		return retVal;
 	}
-	
+
 	public boolean givenUserIsOnOrganizationsPage() {
 		adminSideBar.clickOnOrganizations();
 		return thenUserIsOnOrganizationsPage();
 	}
 
 	public boolean givenOrganizationExist(Organization org) {
-		Header header = new Header(driver);
+		Header header = this.adminEventPage.getHeader();
 		boolean isOrgPresent = header.isOrganizationPresent(org.getName());
 
-		if (!isOrgPresent) {
-			return createOrganization(org);
-		} else {
+		if (isOrgPresent) {
 			header.selectOrganizationFromDropDown(org.getName());
 			return true;
+		} else {
+			return false;
 		}
 	}
-	
+
 	public boolean isOrganizationPresent(Organization org) {
 		return organizationPage.getHeader().isOrganizationPresent(org.getName());
 	}
-	
+
 	public void whenUserPicksOrganizationAndClickOnEdit(Organization org) {
 		AdminOrganizationComponent orgComponent = organizationPage.findOrganizationWithName(org.getName());
 		String id = orgComponent.getOrgId();
@@ -95,7 +95,7 @@ public class OrganizationStepsFacade extends BaseFacadeSteps {
 		EditOrganizationPage selectedOrganization = new EditOrganizationPage(driver, id);
 		setData(EDIT_ORGANIZATION_PAGE_KEY, selectedOrganization);
 	}
-	
+
 	public boolean whenUserClickOnFeesScheeduleAndMakesChanges(FeesSchedule feesSchedule) {
 		EditOrganizationPage editOrganizationPage = (EditOrganizationPage) getData(EDIT_ORGANIZATION_PAGE_KEY);
 		editOrganizationPage.getSettingNavHeader().clickOnFeesSchedule();
@@ -104,7 +104,7 @@ public class OrganizationStepsFacade extends BaseFacadeSteps {
 		feeScheeduleComponent.clickOnUpdateButton();
 		return editOrganizationPage.isNotificationDisplayedWithMessage(MsgConstants.ORGANIZAATION_FEE_SCHEDULE_SAVED);
 	}
-	
+
 	public boolean whenUserClickOnOtherFeesAndMakesChanges(OtherFees otherFees) {
 		EditOrganizationPage editOrganizationPage = (EditOrganizationPage) getData(EDIT_ORGANIZATION_PAGE_KEY);
 		editOrganizationPage.getSettingNavHeader().clickOnOtherFees();
@@ -112,18 +112,18 @@ public class OrganizationStepsFacade extends BaseFacadeSteps {
 		otherFeesComp.fillForm(otherFees);
 		otherFeesComp.clickOnUpdateButton();
 		return editOrganizationPage.isNotificationDisplayedWithMessage(MsgConstants.ORGANIZATION_PER_ORDER_FEE_UPDATED);
-		
+
 	}
-	
+
 	public boolean thenUserIsOnOrganizationSettingsPage() {
 		EditOrganizationPage organizationPage = (EditOrganizationPage) getData(EDIT_ORGANIZATION_PAGE_KEY);
 		return organizationPage.isAtPage();
 	}
-		
+
 	public boolean thenUserIsOnOrganizationsPage() {
 		return organizationPage.isAtPage();
 	}
-	
+
 	@Override
 	protected void setData(String key, Object value) {
 		this.data.put(key, value);

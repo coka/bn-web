@@ -48,7 +48,7 @@ const styles = theme => {
 			borderRadius: 8,
 			"&:hover": {
 				background: secondaryHex,
-				opacity: .7,
+				opacity: 0.7,
 				color: "#FFF"
 			}
 		},
@@ -130,8 +130,8 @@ const styles = theme => {
 		leftIcon: {
 			marginRight: theme.spacing.unit,
 			marginBottom: 2,
-			width: 25,
-			height: 25
+			width: 15,
+			height: 15
 		},
 		small: {
 			height: 30

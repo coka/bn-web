@@ -15,7 +15,7 @@ import utils.DataConstants;
 import utils.MsgConstants;
 
 public class EditEventInformationStepsIT extends BaseSteps {
-	
+
 	@Test(dataProvider = "edit_event_data", priority = 12, retryAnalyzer = utils.RetryAnalizer.class)
 	public void editEvent(User superuser, Event event) throws Exception {
 		LoginStepsFacade loginStepsFacade = new LoginStepsFacade(driver);
@@ -29,7 +29,7 @@ public class EditEventInformationStepsIT extends BaseSteps {
 		adminEventFacade.givenUserIsOnAdminEventsPage();
 		EventSummaryComponent eventComp = adminEventFacade.givenEventWithNameAndPredicateExists(event, comp -> !comp.isEventCanceled());
 
-		eventComp.whenUserSelectEditEventFromDropDown(event);
+		eventComp.clickOnEditEvent(event);
 		event.setEventName("Updated" + event.getEventName());
 		adminEventFacade.whenUserUpdatesDataOfEvent(event);
 		adminEventFacade.whenUserClicksOnUpdateEvent();

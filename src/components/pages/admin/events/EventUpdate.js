@@ -22,44 +22,6 @@ import ImportPreviousEventDialog from "./ImportPreviousEventDialog";
 import Dialog from "../../../elements/Dialog";
 import Loader from "../../../elements/loaders/Loader";
 
-const styles = theme => ({
-	paper: {
-		marginBottom: theme.spacing.unit,
-		paddingBottom: theme.spacing.unit * 5
-	},
-	paddedContent: {
-		paddingRight: theme.spacing.unit * 12,
-		paddingLeft: theme.spacing.unit * 12,
-		[theme.breakpoints.down("sm")]: {
-			paddingRight: theme.spacing.unit * 2,
-			paddingLeft: theme.spacing.unit * 2
-		}
-	},
-	spacer: {
-		marginBottom: theme.spacing.unit * 10
-	},
-	ticketOptions: { display: "flex" },
-	actions: {
-		display: "flex",
-		justifyContent: "space-around",
-		alignItems: "center"
-	},
-	publishDateContainer: {
-		marginTop: 20,
-		display: "flex"
-	},
-	publishedAt: {
-		marginTop: 20
-	},
-	missingPromoImageError: {
-		color: "red",
-		textAlign: "center"
-	},
-	disabledExternalEvent: {
-		color: "gray"
-	}
-});
-
 @observer
 class Event extends Component {
 	constructor(props) {
@@ -692,5 +654,43 @@ class Event extends Component {
 		);
 	}
 }
+
+const styles = theme => ({
+	paper: {
+		marginBottom: theme.spacing.unit,
+		paddingBottom: theme.spacing.unit * 5
+	},
+	paddedContent: {
+		paddingRight: theme.spacing.unit * 12,
+		paddingLeft: theme.spacing.unit * 12,
+		[theme.breakpoints.down("sm")]: {
+			paddingRight: theme.spacing.unit * 2,
+			paddingLeft: theme.spacing.unit * 2
+		}
+	},
+	spacer: {
+		marginBottom: theme.spacing.unit * 10
+	},
+	ticketOptions: { display: "flex" },
+	actions: {
+		display: "flex",
+		justifyContent: "space-around",
+		alignItems: "center"
+	},
+	publishDateContainer: {
+		marginTop: 20,
+		display: "flex"
+	},
+	publishedAt: {
+		marginTop: 20
+	},
+	missingPromoImageError: {
+		color: "red",
+		textAlign: "center"
+	},
+	disabledExternalEvent: {
+		color: "gray"
+	}
+});
 
 export default withStyles(styles)(Event);

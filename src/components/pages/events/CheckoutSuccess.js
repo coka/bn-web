@@ -8,7 +8,6 @@ import CustomButton from "../../elements/Button";
 import notifications from "../../../stores/notifications";
 import selectedEvent from "../../../stores/selectedEvent";
 import cart from "../../../stores/cart";
-import EventDetailsOverlayCard from "../../elements/event/EventDetailsOverlayCard";
 import {
 	fontFamily,
 	fontFamilyBold,
@@ -29,15 +28,417 @@ import OrgAnalytics from "../../common/OrgAnalytics";
 import Bigneon from "../../../helpers/bigneon";
 import moment from "moment-timezone";
 import Settings from "../../../config/settings";
-import classNames from "classnames";
 import PurchaseDetails from "./PurchaseDetails";
 import Hero from "./SuccessHero";
 import removeCountryFromAddress from "../../../helpers/removeCountryFromAddress";
 import { loadDrift } from "../../../helpers/drift";
+import Button from "../../elements/Button";
+import Card from "../../elements/Card";
+import BigneonPerksDialog from "./BigneonPerksDialog";
+import { Link } from "react-router-dom";
 
 const heroHeight = 586;
 
 const iPhone5MediaQuery = "@media (max-width:321px)";
+
+@observer
+class CheckoutSuccess extends Component {
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			mobileDialogOpen: true,
+			mobileCardSlideIn: true,
+			order_id: null,
+			appId: null,
+			interactionId: null,
+			order: null,
+			phoneOS: getPhoneOS(),
+			perksDialogOpen: false
+		};
+
+		this.togglePerksDialog = this.togglePerksDialog.bind(this);
+	}
+
+	componentDidMount() {
+		this.setState(
+			{
+				appId: Settings().driftBotAppID,
+				interactionId: Settings().driftBotOrderConfirmationInteractionID
+			},
+			() => {
+				const { appId, interactionId } = this.state;
+				if (appId && interactionId) {
+					loadDrift(appId, () => {
+						window.driftt.api.startInteraction({
+							interactionId: Number(interactionId),
+							goToConversation: true
+						});
+					});
+				}
+			}
+		);
+		cart.emptyCart(); //TODO move this to after they've submitted the final form
+
+		if (
+			this.props.match &&
+			this.props.match.params &&
+			this.props.match.params.id
+		) {
+			const { id } = this.props.match.params;
+
+			selectedEvent.refreshResult(id, errorMessage => {
+				notifications.show({
+					message: errorMessage,
+					variant: "error"
+				});
+			});
+
+			const order_id = getUrlParam("order_id");
+
+			if (order_id) {
+				this.setState({ order_id }, () => {
+					this.getOrderInformation();
+				});
+			}
+		} else {
+			//TODO return 404
+		}
+	}
+
+	togglePerksDialog(e) {
+		e.preventDefault();
+		this.setState(prevState => ({
+			perksDialogOpen: !prevState.perksDialogOpen
+		}));
+	}
+
+	getOrderInformation() {
+		const { order_id } = this.state;
+
+		Bigneon()
+			.orders.read({ id: order_id })
+			.then(response => {
+				const { data } = response;
+				const { is_box_office, items } = data;
+				const platform = is_box_office ? "Box office" : data.platform || "";
+
+				let fees_in_cents = 0;
+				items.forEach(({ item_type, unit_price_in_cents, quantity }) => {
+					//Only include fee type items
+					if (
+						["CreditCardFees", "PerUnitFees", "EventFees"].indexOf(item_type) >
+						-1
+					) {
+						fees_in_cents += unit_price_in_cents * quantity;
+					}
+				});
+
+				this.setState({
+					order: { ...data, platform, fees_in_cents }
+				});
+			})
+			.catch(error => {
+				console.error(error);
+
+				notifications.showFromErrorResponse({
+					defaultMessage: "Loading order failed.",
+					error
+				});
+			});
+	}
+
+	goHome() {
+		this.setState({ mobileCardSlideIn: false }, () => {
+			setTimeout(() => {
+				this.setState({ mobileDialogOpen: false }, () => {
+					setTimeout(() => {
+						this.props.history.push("/");
+					}, 80);
+				});
+			}, 200);
+		});
+	}
+
+	render() {
+		const { classes } = this.props;
+		const { event, venue, artists, organization } = selectedEvent;
+		const firstName = user.firstName;
+		const {
+			mobileDialogOpen,
+			mobileCardSlideIn,
+			perksDialogOpen,
+			order,
+			order_id,
+			phoneOS
+		} = this.state;
+		if (event === null || order === null) {
+			return (
+				<div>
+					<PrivateEventDialog/>
+					<Loader style={{ height: 400 }}/>
+				</div>
+			);
+		}
+
+		if (event === false) {
+			return <NotFound>Event not found.</NotFound>;
+		}
+
+		const {
+			displayEventStartDate,
+			additional_info,
+			promo_image_url,
+			displayDoorTime,
+			displayShowTime,
+			eventStartDateMoment,
+			tracking_keys
+		} = event;
+
+		const eventDateFormatted = moment
+			.utc(eventStartDateMoment)
+			.tz(venue.timezone)
+			.format("llll z");
+
+		const ticketItem = order.items.filter(item => item.item_type === "Tickets");
+		const promoImageStyle = {};
+		if (promo_image_url) {
+			promoImageStyle.backgroundImage = `url(${promo_image_url})`;
+		}
+		let qty = 0;
+		if (ticketItem.length > 0) {
+			ticketItem.forEach(item => {
+				qty = qty + item.quantity;
+			});
+		}
+
+		const iconUrlTicket = "/icons/ticket-upright-white.svg";
+
+		return (
+			<div className={classes.root}>
+				<OrgAnalytics trackingKeys={tracking_keys}/>
+				<Meta
+					{...event}
+					venue={venue}
+					artists={artists}
+					additional_info={additional_info}
+					organization={organization}
+					doorTime={displayDoorTime}
+					showTime={displayShowTime}
+					type={"success"}
+				/>
+
+				{/*DESKTOP*/}
+				<BigneonPerksDialog
+					open={perksDialogOpen}
+					onClose={() => this.togglePerksDialog}
+				/>
+				<Hidden smDown>
+					<div style={{ height: heroHeight * 1.2 }}>
+						<Hero
+							order_id={order_id}
+							order={order}
+							promoImg={promo_image_url}
+							venue={venue}
+							firstName={firstName}
+							qty={qty}
+							classes={classes}
+							promoImgStyle={promoImageStyle}
+							displayEventStartDate={eventDateFormatted}
+							event={event}
+						/>
+						<TwoColumnLayout
+							containerClass={classes.desktopHeroContent}
+							containerStyle={{ minHeight: heroHeight, maxWidth: 956 }}
+							style={{ maxWidth: 956 }}
+							col1={null}
+							col2={(
+								<Card
+									style={{
+										minWidth: "380px",
+										position: "relative"
+									}}
+								>
+									<div className={classes.desktopCardContent}>
+										<img
+											alt="Bigneon Logo"
+											className={classes.heartLogo}
+											src={servedImage("/site/images/big-neon-heart-logo.png")}
+										/>
+										<Typography className={classes.cardLargeText}>
+											Your Tickets are 2 Taps Away
+										</Typography>
+										<Typography className={classes.greySmallInfo}>
+											Your secure tickets are waiting for you in the Big Neon
+											App. Just tap the button below and we’ll quickly help you
+											download the app to view your tickets. Don’t want to use
+											the app? Just bring your photo ID to the event instead.
+										</Typography>
+										<div className={classes.btnContainer}>
+											<a href={order.app_download_link}>
+												<Button
+													iconUrl={iconUrlTicket}
+													size={"large"}
+													variant={"callToAction"}
+												>
+													Download App to View My Tickets
+												</Button>
+											</a>
+										</div>
+										<div onClick={this.togglePerksDialog}>
+											<Typography className={classes.pinkLink}>
+												Why Life is Better with the Big Neon App
+											</Typography>
+										</div>
+									</div>
+								</Card>
+							)}
+						/>
+					</div>
+					<Typography className={classes.questionsText}>
+						Any questions?&nbsp;
+						<span>
+							<a
+								className={classes.pinkSpan}
+								href={Settings().submitSupportLink}
+							>
+								Big Neon Customer Support
+							</a>
+						</span>
+					</Typography>
+					<PurchaseDetails
+						displayEventStartDate={eventDateFormatted}
+						order={order}
+						event={event}
+						venue={venue}
+						classes={classes}
+					/>
+					<Typography className={classes.plainGreyText}>
+						Receipt has been sent to {user.email}
+					</Typography>
+				</Hidden>
+
+				{/*MOBILE*/}
+				<Hidden mdUp>
+					<div style={{ marginBottom: 500 }}/>
+					<Dialog
+						fullScreen
+						aria-labelledby="dialog-title"
+						onEntering={() => {}}
+						onExiting={() => {}}
+						open={mobileDialogOpen}
+					>
+						<div className={classes.mobileContent}>
+							<div className={classes.mobileHeaderRow}>
+								{/*TODO once my-events is mobile friendly redirect there?*/}
+								<div onClick={this.goHome.bind(this)}>
+									<img
+										className={classes.mobileHeaderIcon}
+										alt="close"
+										src={servedImage("/icons/close-white.svg")}
+									/>
+								</div>
+							</div>
+
+							<div className={classes.mobiCardHolder}>
+								<Card>
+									<div className={classes.mobileCardContent}>
+										<Typography className={classes.mobileSuccessHeading}>
+											{user.firstName}, Your Order is Confirmed! Now get the Big
+											Neon app to View your Tickets
+										</Typography>
+										<Typography className={classes.greySmallInfo}>
+											Your secure tickets are waiting for you in the Big Neon
+											App. Just tap the button below and we’ll quickly help you
+											download the app to view your tickets. Don’t want to use
+											the app? Just bring your photo ID to the event instead.
+										</Typography>
+										<div className={classes.btnContainer}>
+											<a href={order.app_download_link}>
+												<Button
+													iconUrl={iconUrlTicket}
+													size={"large"}
+													variant={"callToAction"}
+												>
+													Download App to View My Tickets
+												</Button>
+											</a>
+										</div>
+										<div onClick={this.togglePerksDialog}>
+											<Typography className={classes.pinkLink}>
+												Why Life is Better with the Big Neon App
+											</Typography>
+										</div>
+									</div>
+								</Card>
+							</div>
+
+							<div className={classes.mobileTopContent}>
+								{promoImageStyle ? (
+									<div
+										className={classes.desktopEventPromoImg}
+										style={promoImageStyle}
+									/>
+								) : null}
+
+								<Typography className={classes.greyTitleBold}>Event</Typography>
+
+								<Typography className={classes.desktopEventDetailText}>
+									<span className={classes.boldText}>{event.name}</span>
+									<br/>
+									{displayEventStartDate}
+								</Typography>
+
+								<Typography className={classes.greyTitleBold}>
+									Location
+								</Typography>
+
+								<Typography className={classes.desktopEventDetailText}>
+									<span className={classes.boldText}>{venue.name}</span>
+									<br/>
+									{removeCountryFromAddress(venue.address)}
+								</Typography>
+							</div>
+							<div>
+								<Slide direction="up" in={mobileCardSlideIn}>
+									<div className={classes.mobilePopupCard}>
+										<Typography className={classes.questionsText}>
+											Any questions?&nbsp;
+											<span>
+												<a
+													className={classes.pinkSpan}
+													href={Settings().submitSupportLink}
+												>
+													Big Neon Customer Support
+												</a>
+											</span>
+										</Typography>
+										<PurchaseDetails
+											displayEventStartDate={eventDateFormatted}
+											order={order}
+											event={event}
+											venue={venue}
+											classes={classes}
+										/>
+										<Typography className={classes.plainGreyText}>
+											Receipt has been sent to {user.email}
+										</Typography>
+									</div>
+								</Slide>
+							</div>
+						</div>
+					</Dialog>
+				</Hidden>
+			</div>
+		);
+	}
+}
+
+CheckoutSuccess.propTypes = {
+	match: PropTypes.object.isRequired,
+	classes: PropTypes.object.isRequired,
+	history: PropTypes.object.isRequired
+};
 
 const styles = theme => {
 	return {
@@ -46,10 +447,13 @@ const styles = theme => {
 		},
 		mobileContent: {
 			// flex: 1,
-			paddingTop: 40,
 			flexDirection: "column",
+			paddingTop: 20,
 			background: "linear-gradient(180deg, #9C2D82 0%, #3965A6 40%)",
 			display: "flex"
+		},
+		mobiCardHolder: {
+			padding: 20
 		},
 		mobileTopContent: {
 			// flex: 1,
@@ -57,7 +461,7 @@ const styles = theme => {
 			flexDirection: "column",
 			justifyContent: "center",
 			alignItems: "center",
-			minHeight: "70vh",
+			minHeight: "55vh",
 			paddingLeft: 22,
 			paddingRight: 22,
 			[iPhone5MediaQuery]: {
@@ -99,7 +503,7 @@ const styles = theme => {
 		},
 		mobileSuccessHeading: {
 			fontSize: 22,
-			color: "#FFFFFF",
+			color: "#32383E",
 			lineHeight: 1,
 			fontFamily: fontFamilyDemiBold,
 			[iPhone5MediaQuery]: {
@@ -145,8 +549,7 @@ const styles = theme => {
 			textAlign: "center"
 		},
 		mobileCardContent: {
-			paddingRight: theme.spacing.unit,
-			paddingLeft: theme.spacing.unit,
+			padding: theme.spacing.unit * 4,
 			textAlign: "center"
 		},
 		desktopCoverImage: {
@@ -229,10 +632,10 @@ const styles = theme => {
 			textAlign: "left"
 		},
 		desktopCardFooterContainer: {
-			// padding: 10,
-			// paddingRight: 10,
-			// paddingLeft: 10,
 			textAlign: "center",
+			display: "flex",
+			justifyContent: "center",
+			alignItems: "center",
 			[theme.breakpoints.down("md")]: {
 				textAlign: "left"
 			}
@@ -268,8 +671,6 @@ const styles = theme => {
 			display: "flex",
 			flexDirection: "column",
 			alignItems: "flex-start",
-			marginLeft: theme.spacing.unit * 6,
-			marginBottom: 25,
 			[theme.breakpoints.down("md")]: {
 				marginLeft: 0,
 				marginBottom: theme.spacing.unit * 2
@@ -321,7 +722,7 @@ const styles = theme => {
 		},
 		purchaseInfoBlock: {
 			padding: theme.spacing.unit * 4,
-			maxWidth: 796,
+			maxWidth: 956,
 			borderRadius: 10,
 			backgroundColor: "rgba(89,83,155,0.05)",
 			display: "flex",
@@ -413,464 +814,22 @@ const styles = theme => {
 			fontFamily: fontFamilyDemiBold,
 			textDecoration: "none",
 			lineHeight: "19px"
+		},
+		pinkLink: {
+			color: secondaryHex,
+			fontSize: 16,
+			fontFamily: fontFamily,
+			textDecoration: "none",
+			lineHeight: "18px",
+			cursor: "pointer",
+			marginBottom: 20
+		},
+		greySmallInfo: {
+			color: "#9BA3B5",
+			lineHeight: "18px",
+			textAlign: "center"
 		}
 	};
-};
-
-@observer
-class CheckoutSuccess extends Component {
-	constructor(props) {
-		super(props);
-
-		this.state = {
-			mobileDialogOpen: true,
-			mobileCardSlideIn: true,
-			order_id: null,
-			appId: null,
-			interactionId: null,
-			order: null,
-			phoneOS: getPhoneOS()
-		};
-	}
-
-	componentDidMount() {
-		this.setState(
-			{
-				appId: Settings().driftBotAppID,
-				interactionId: Settings().driftBotOrderConfirmationInteractionID
-			},
-			() => {
-				const { appId, interactionId } = this.state;
-				if (appId && interactionId) {
-					loadDrift(appId, () => {
-						window.driftt.api.startInteraction({
-							interactionId: Number(interactionId),
-							goToConversation: true
-						});
-					});
-				}
-			}
-		);
-		cart.emptyCart(); //TODO move this to after they've submitted the final form
-
-		if (
-			this.props.match &&
-			this.props.match.params &&
-			this.props.match.params.id
-		) {
-			const { id } = this.props.match.params;
-
-			selectedEvent.refreshResult(id, errorMessage => {
-				notifications.show({
-					message: errorMessage,
-					variant: "error"
-				});
-			});
-
-			const order_id = getUrlParam("order_id");
-
-			if (order_id) {
-				this.setState({ order_id }, () => {
-					this.getOrderInformation();
-				});
-			}
-		} else {
-			//TODO return 404
-		}
-	}
-
-	getOrderInformation() {
-		const { order_id } = this.state;
-
-		Bigneon()
-			.orders.read({ id: order_id })
-			.then(response => {
-				const { data } = response;
-				const { is_box_office, items } = data;
-				const platform = is_box_office ? "Box office" : data.platform || "";
-
-				let fees_in_cents = 0;
-				items.forEach(({ item_type, unit_price_in_cents, quantity }) => {
-					//Only include fee type items
-					if (
-						["CreditCardFees", "PerUnitFees", "EventFees"].indexOf(item_type) >
-						-1
-					) {
-						fees_in_cents += unit_price_in_cents * quantity;
-					}
-				});
-
-				this.setState({
-					order: { ...data, platform, fees_in_cents }
-				});
-			})
-			.catch(error => {
-				console.error(error);
-
-				notifications.showFromErrorResponse({
-					defaultMessage: "Loading order failed.",
-					error
-				});
-			});
-	}
-
-	goHome() {
-		this.setState({ mobileCardSlideIn: false }, () => {
-			setTimeout(() => {
-				this.setState({ mobileDialogOpen: false }, () => {
-					setTimeout(() => {
-						this.props.history.push("/");
-					}, 80);
-				});
-			}, 200);
-		});
-	}
-
-	render() {
-		const { classes } = this.props;
-		const { event, venue, artists, organization } = selectedEvent;
-		const firstName = user.firstName;
-		const {
-			mobileDialogOpen,
-			mobileCardSlideIn,
-			order,
-			order_id,
-			phoneOS,
-			appId
-		} = this.state;
-		if (event === null || order === null) {
-			return (
-				<div>
-					<PrivateEventDialog/>
-					<Loader style={{ height: 400 }}/>
-				</div>
-			);
-		}
-
-		if (event === false) {
-			return <NotFound>Event not found.</NotFound>;
-		}
-
-		const {
-			displayEventStartDate,
-			additional_info,
-			promo_image_url,
-			displayDoorTime,
-			displayShowTime,
-			eventStartDateMoment,
-			tracking_keys
-		} = event;
-
-		const eventDateFormatted = moment
-			.utc(eventStartDateMoment)
-			.tz(venue.timezone)
-			.format("llll z");
-
-		const ticketItem = order.items.filter(item => item.item_type === "Tickets");
-		const promoImageStyle = {};
-		if (promo_image_url) {
-			promoImageStyle.backgroundImage = `url(${promo_image_url})`;
-		}
-		let qty = 0;
-		if (ticketItem.length > 0) {
-			ticketItem.forEach(item => {
-				qty = qty + item.quantity;
-			});
-		}
-		return (
-			<div className={classes.root}>
-				<OrgAnalytics trackingKeys={tracking_keys}/>
-				<Meta
-					{...event}
-					venue={venue}
-					artists={artists}
-					additional_info={additional_info}
-					organization={organization}
-					doorTime={displayDoorTime}
-					showTime={displayShowTime}
-					type={"success"}
-				/>
-
-				{/*DESKTOP*/}
-				<Hidden smDown>
-					<div style={{ height: heroHeight * 1.2 }}>
-						<Hero
-							order_id={order_id}
-							order={order}
-							promoImg={promo_image_url}
-							venue={venue}
-							firstName={firstName}
-							qty={qty}
-							classes={classes}
-							promoImgStyle={promoImageStyle}
-							displayEventStartDate={eventDateFormatted}
-							event={event}
-						/>
-						<TwoColumnLayout
-							containerClass={classes.desktopHeroContent}
-							containerStyle={{ minHeight: heroHeight }}
-							col1={null}
-							col2={(
-								<EventDetailsOverlayCard
-									style={{
-										minWidth: "390px",
-										position: "relative"
-									}}
-								>
-									<div>
-										<div className={classes.desktopCardContent}>
-											<img
-												alt="Bigneon Logo"
-												className={classes.heartLogo}
-												src={servedImage(
-													"/site/images/big-neon-heart-logo.png"
-												)}
-											/>
-											<Typography className={classes.cardLargeText}>
-												Get your tickets now by downloading the Big Neon App
-											</Typography>
-											<div className={classes.btnContainer}>
-												<a href={Settings().appStoreIos} target="_blank">
-													<img
-														className={classes.downloadBtn}
-														src={servedImage("/images/appstore-apple.png")}
-														alt="App Store download button"
-													/>
-												</a>
-												{/*<AppButton*/}
-												{/*	color="pinkBackground"*/}
-												{/*	variant="ios"*/}
-												{/*	href={Settings().appStoreIos}*/}
-												{/*	style={{ marginRight: 5 }}*/}
-												{/*>*/}
-												{/*	APP STORE*/}
-												{/*</AppButton>*/}
-												<a href={Settings().appStoreAndroid} target="_blank">
-													<img
-														className={classes.downloadBtn}
-														src={servedImage(
-															"/images/appstore-google-play.png"
-														)}
-														alt="Google Play download button"
-													/>
-												</a>
-												{/*<AppButton*/}
-												{/*	color="pinkBackground"*/}
-												{/*	variant="android"*/}
-												{/*	href={Settings().appStoreAndroid}*/}
-												{/*	style={{ marginRight: 5 }}*/}
-												{/*>*/}
-												{/*	GOOGLE PLAY*/}
-												{/*</AppButton>*/}
-											</div>
-											<Typography className={classes.cardMedText}>
-												2 ways to get your tickets:
-											</Typography>
-											<Typography className={classes.fakeList}>
-												1. Get the App (Quickest entry)
-												<br/>
-												2. Show your ID at the door
-											</Typography>
-										</div>
-
-										<div className={classes.divider}/>
-
-										<div className={classes.desktopCardFooterContainer}>
-											<Typography
-												className={classNames({
-													[classes.desktopFooterText]: true,
-													[classes.desktopFooterTextTitle]: true
-												})}
-											>
-												With the Big Neon App you can:
-											</Typography>
-											<div className={classes.iconText}>
-												<Typography className={classes.desktopFooterText}>
-													<span className={classes.icon}>&#x1F46F;</span>
-													Transfer tickets to friends
-												</Typography>
-												<Typography className={classes.desktopFooterText}>
-													<span className={classes.icon}>&#x1F430;</span>
-													Speed through the line
-												</Typography>
-												<Typography className={classes.desktopFooterText}>
-													<span className={classes.icon}>&#x1F379;</span>
-													Score presale access to events
-												</Typography>
-											</div>
-										</div>
-									</div>
-								</EventDetailsOverlayCard>
-							)}
-						/>
-					</div>
-					<Typography className={classes.questionsText}>
-						Any questions?&nbsp;
-						<span>
-							<a
-								className={classes.pinkSpan}
-								href={Settings().submitSupportLink}
-							>
-								Big Neon Customer Support
-							</a>
-						</span>
-					</Typography>
-					<PurchaseDetails
-						displayEventStartDate={eventDateFormatted}
-						order={order}
-						event={event}
-						venue={venue}
-						classes={classes}
-					/>
-					<Typography className={classes.plainGreyText}>
-						Receipt has been sent to {user.email}
-					</Typography>
-				</Hidden>
-
-				{/*MOBILE*/}
-				<Hidden mdUp>
-					<div style={{ marginBottom: 500 }}/>
-					<Dialog
-						fullScreen
-						aria-labelledby="dialog-title"
-						onEntering={() => {
-						}}
-						onExiting={() => {
-						}}
-						open={mobileDialogOpen}
-					>
-						<div className={classes.mobileContent}>
-							<div className={classes.mobileHeaderRow}>
-								{/*TODO once my-events is mobile friendly redirect there?*/}
-								<div onClick={this.goHome.bind(this)}>
-									<img
-										className={classes.mobileHeaderIcon}
-										alt="close"
-										src={servedImage("/icons/close-white.svg")}
-									/>
-								</div>
-							</div>
-
-							<div className={classes.mobileTopContent}>
-								<Typography className={classes.mobileSuccessHeading}>
-									{user.firstName},<br/>
-									Your Big Neon order is confirmed!
-								</Typography>
-								<Typography className={classes.mobileSuccessText}>
-									Order #{order.order_number} |&nbsp;{qty} Tickets
-								</Typography>
-								<br/>
-								{promoImageStyle ? (
-									<div
-										className={classes.desktopEventPromoImg}
-										style={promoImageStyle}
-									/>
-								) : null}
-
-								<Typography className={classes.greyTitleBold}>Event</Typography>
-
-								<Typography className={classes.desktopEventDetailText}>
-									<span className={classes.boldText}>{event.name}</span>
-									<br/>
-									{displayEventStartDate}
-								</Typography>
-
-								<Typography className={classes.greyTitleBold}>
-									Location
-								</Typography>
-
-								<Typography className={classes.desktopEventDetailText}>
-									<span className={classes.boldText}>{venue.name}</span>
-									<br/>
-									{removeCountryFromAddress(venue.address)}
-								</Typography>
-							</div>
-							<div>
-								<Slide direction="up" in={mobileCardSlideIn}>
-									<div className={classes.mobilePopupCard}>
-										<div className={classes.mobileCardContent}>
-											<Typography className={classes.cardLargeText}>
-												Get your tickets now by downloading the Big Neon App
-											</Typography>
-											<div className={classes.btnContainer}>
-												<a
-													href={
-														phoneOS === "ios"
-															? Settings().appStoreIos
-															: Settings().appStoreAndroid
-													}
-													target="_blank"
-												>
-													<CustomButton
-														variant="secondary"
-														style={{ width: "80vw" }}
-													>
-														DOWNLOAD THE BIG NEON APP
-													</CustomButton>
-												</a>
-											</div>
-										</div>
-
-										<Divider/>
-
-										<div className={classes.desktopCardFooterContainer}>
-											<Typography className={classes.desktopFooterText}>
-												With the Big Neon App you can:
-											</Typography>
-											<br/>
-											<div className={classes.iconText}>
-												<Typography className={classes.desktopFooterText}>
-													<span className={classes.icon}>&#x1F46F;</span>
-													Transfer tickets to friends
-												</Typography>
-												<Typography className={classes.desktopFooterText}>
-													<span className={classes.icon}>&#x1F430;</span>
-													Speed through the line
-												</Typography>
-												<Typography className={classes.desktopFooterText}>
-													<span className={classes.icon}>&#x1F379;</span>
-													Score presale access to events
-												</Typography>
-											</div>
-										</div>
-										<Divider/>
-
-										<Typography className={classes.questionsText}>
-											Any questions?&nbsp;
-											<span>
-												<a
-													className={classes.pinkSpan}
-													href={Settings().submitSupportLink}
-												>
-													Big Neon Customer Support
-												</a>
-											</span>
-										</Typography>
-										<PurchaseDetails
-											displayEventStartDate={eventDateFormatted}
-											order={order}
-											event={event}
-											venue={venue}
-											classes={classes}
-										/>
-										<Typography className={classes.plainGreyText}>
-											Receipt has been sent to {user.email}
-										</Typography>
-									</div>
-								</Slide>
-							</div>
-						</div>
-					</Dialog>
-				</Hidden>
-			</div>
-		);
-	}
-}
-
-CheckoutSuccess.propTypes = {
-	match: PropTypes.object.isRequired,
-	classes: PropTypes.object.isRequired,
-	history: PropTypes.object.isRequired
 };
 
 export default withStyles(styles)(CheckoutSuccess);

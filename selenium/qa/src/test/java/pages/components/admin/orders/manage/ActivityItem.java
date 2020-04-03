@@ -285,9 +285,9 @@ public class ActivityItem extends BaseComponent {
 		}
 
 		public Venue getVenue() {
-			return new VenueFormatter("A, L").parse(getVenueLocation().trim());
+			return new VenueFormatter("A").parse(getVenueLocation().trim());
 		}
-		
+
 		public String getVenueLocation() {
 			return getVenueLocationElement().getText();
 		}

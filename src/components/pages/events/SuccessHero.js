@@ -16,7 +16,8 @@ const Hero = ({
 	return (
 		<div className={classes.desktopCoverImage}>
 			<TwoColumnLayout
-				style={{ maxWidth: 1400, margin: "0 auto" }}
+				style={{ margin: "0 auto" }}
+				containerStyle={{ maxWidth: 956 }}
 				col1={(
 					<div className={classes.desktopHeroContent}>
 						<Typography className={classes.desktopHeroTopLine}>

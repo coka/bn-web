@@ -28,27 +28,29 @@ public class EventSummaryComponent extends BaseComponent {
 	private String relativeIsCanceledParagraphXpath = ".//div[p[contains(text(),'Cancelled')]]";
 
 	private String relativeIsDraftParagraphPath = ".//div/p[contains(text(),'Draft')]";
-	
+
 	private String relativeIsPublishedXPath = ".//p[contains(text(),'Published')]";
 
 	private String relativeIsOnSaleXPath = ".//p[contains(text(),'On sale')]";
-	
+
 	private String relativeEventNameXpath = "./div/div[2]/div[1]/div[1]/a/p";
 
 	private String relativeVenueParagraphPath = ".//a[contains(@href,'/dashboard')]/following-sibling::p[1]";
 
 	private String relativeDateTimeParagraphPath = ".//a[contains(@href,'/dashboard')]/following-sibling::p[2]";
-	
+
 	private String relativeImageXPath = ".//a[contains(@href,'/admin/events/')]/div";
-	
+
 	private String relativeSoldToDivXPath = "./div/div[2]/div[2]/div[2]/div/div[p[text()='Sold']]/p[2]";
-	
+
 	private String viewEventDDAction = "View event";
-	
+
 	private String deleteEventDDAction = "Delete event";
-	
+
 	private String editEventDDAction = "Edit event";
-	
+
+	private String eventOverviewDDAction = "Event overview";
+
 	private String cancelEventDDAction = "Cancel event";
 
 	public EventSummaryComponent(WebDriver driver, WebElement event) {
@@ -65,7 +67,7 @@ public class EventSummaryComponent extends BaseComponent {
 		return SeleniumUtils.isChildElementVisibleFromParentLocatedBy(event, By.xpath(relativeIsDraftParagraphPath),
 				driver);
 	}
-	
+
 	public boolean isEventPublished() {
 		return SeleniumUtils.isChildElementVisibleFromParentLocatedBy(event, By.xpath(relativeIsPublishedXPath),
 				driver);
@@ -106,23 +108,27 @@ public class EventSummaryComponent extends BaseComponent {
 		DeleteEventDialog deleteDialog = new DeleteEventDialog(driver);
 		deleteDialog.clickOnDeleteButton(event.getEventName());
 		return deleteDialog;
-		
 	}
-	
+
+	public void clickOnEventOverview() {
+		openDropDown();
+		findActionAndClickInDropDown(dropDownXpathElement(eventOverviewDDAction));
+	}
+
 	public String getEventName() {
 		return SeleniumUtils.getChildElementFromParentLocatedBy(event, By.xpath(relativeEventNameXpath), driver).getText();
 	}
 
-	public void whenUserSelectEditEventFromDropDown(Event event) {
+	public void clickOnEditEvent(Event event) {
 		openDropDown();
 		findActionAndClickInDropDown(dropDownXpathElement(editEventDDAction));
 	}
-	
+
 	public void viewEvent() {
 		openDropDown();
 		findActionAndClickInDropDown(dropDownXpathElement(viewEventDDAction));
 	}
-	
+
 	public void clickOnEvent() {
 		WebElement image = SeleniumUtils.getChildElementFromParentLocatedBy(event, By.xpath(relativeImageXPath), driver);
 		waitVisibilityAndBrowserCheckClick(image);
@@ -143,9 +149,9 @@ public class EventSummaryComponent extends BaseComponent {
 		waitVisibilityAndBrowserCheckClick(dropDown);
 		return dropDown;
 	}
-	
+
 	private By dropDownXpathElement(String actionName) {
-		return By.xpath("//body//div[@id='long-menu']//ul/li[div[span[contains(text(),'" + actionName + "')]]]");
+		return By.xpath("//ul/li[div[span[contains(text(),'" + actionName + "')]]]");
 	}
 
 	private void findActionAndClickInDropDown(By by) {

@@ -6,6 +6,7 @@ import Divider from "@material-ui/core/Divider";
 import servedImage from "../../../../../helpers/imagePathHelper";
 import ColorTag from "../../../../elements/ColorTag";
 import moment from "moment-timezone";
+import TagsContainer from "../../../../common/TagsContainer";
 
 const OverviewHeader = ({ classes, event, artists, venue, timezoneAbbr }) => {
 	const {
@@ -20,7 +21,8 @@ const OverviewHeader = ({ classes, event, artists, venue, timezoneAbbr }) => {
 		eventEnded,
 		publish_date,
 		status,
-		publishedDateAfterNowAndNotDraft
+		publishedDateAfterNowAndNotDraft,
+		override_status
 	} = event;
 
 	const promo_image_url = event.promo_image_url
@@ -29,40 +31,6 @@ const OverviewHeader = ({ classes, event, artists, venue, timezoneAbbr }) => {
 	const promoImgStyle = {};
 	if (promo_image_url) {
 		promoImgStyle.backgroundImage = `url(${promo_image_url})`;
-	}
-	let tags = null;
-	if (cancelled_at) {
-		tags = <Typography className={classes.cancelled}>Cancelled</Typography>;
-	} else {
-		let onSaleTag = null;
-
-		if (eventEnded) {
-			onSaleTag = <ColorTag variant="disabled">Event ended</ColorTag>;
-		} else if (isOnSale) {
-			onSaleTag = <ColorTag variant="green">On sale</ColorTag>;
-		} else if (is_external) {
-			onSaleTag = <ColorTag variant="green">External</ColorTag>;
-		}
-
-		tags = (
-			<div className={classes.statusContainer}>
-				<ColorTag
-					style={{ marginRight: 10, borderRadius: 3 }}
-					variant={
-						isPublished || publishedDateAfterNowAndNotDraft
-							? "secondary"
-							: "disabled"
-					}
-				>
-					{isPublished
-						? "Published"
-						: publishedDateAfterNowAndNotDraft
-							? "Scheduled"
-							: "Draft"}
-				</ColorTag>
-				{onSaleTag}
-			</div>
-		);
 	}
 
 	function renderArtistSubtitle() {
@@ -94,7 +62,15 @@ const OverviewHeader = ({ classes, event, artists, venue, timezoneAbbr }) => {
 				<Typography className={classes.headerTitle}>{name}</Typography>
 				<div className={classes.justifyBetween}>
 					{renderArtistSubtitle()}
-					{tags}
+					<TagsContainer
+						cancelled={cancelled_at}
+						isOnSale={isOnSale}
+						eventEnded={eventEnded}
+						overrideStatus={override_status}
+						isPublished={isPublished}
+						publishedDateAfterNowAndNotDraft={publishedDateAfterNowAndNotDraft}
+						isExternal={is_external}
+					/>
 				</div>
 				<Divider className={classes.dividerStyle}/>
 				<div className={classes.headerEventDateInfo}>

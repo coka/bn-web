@@ -12,7 +12,7 @@ import org.testng.asserts.SoftAssert;
 
 import model.Event;
 import pages.admin.events.AdminEventsPage;
-import pages.admin.events.CreateEventPage;
+import pages.admin.events.EventPage;
 import pages.components.admin.AdminSideBar;
 import pages.components.admin.events.EventSummaryComponent;
 import pages.components.dialogs.DeleteEventDialog;
@@ -22,7 +22,7 @@ import utils.SeleniumUtils;
 
 public class AdminEventStepsFacade extends BaseFacadeSteps {
 
-	private CreateEventPage createEventPage;
+	private EventPage eventPage;
 	private AdminEventsPage adminEvents;
 	private AdminSideBar adminSideBar;
 
@@ -30,7 +30,7 @@ public class AdminEventStepsFacade extends BaseFacadeSteps {
 
 	public AdminEventStepsFacade(WebDriver driver) {
 		super(driver);
-		this.createEventPage = new CreateEventPage(driver);
+		this.eventPage = new EventPage(driver);
 		this.adminEvents = new AdminEventsPage(driver);
 		this.adminSideBar = new AdminSideBar(driver);
 		this.dataMap = new HashMap<>();
@@ -40,11 +40,11 @@ public class AdminEventStepsFacade extends BaseFacadeSteps {
 		adminSideBar.clickOnEvents();
 		adminEvents.isAtPage();
 	}
-	
+
 	public EventSummaryComponent givenEventExistAndIsNotCanceled(Event event) throws URISyntaxException {
 		return givenEventWithNameAndPredicateExists(event, comp -> !comp.isEventCanceled());
 	}
-	
+
 	public EventSummaryComponent findEventWithName(Event event) {
 		return adminEvents.findEventByName(event.getEventName());
 	}
@@ -112,7 +112,7 @@ public class AdminEventStepsFacade extends BaseFacadeSteps {
 		EventSummaryComponent eventSummary = findEventWithNameAndPredicate(event, comp -> !comp.isEventCanceled());
 		eventSummary.clickOnEvent();
 	}
-	
+
 	public boolean whenUserDeletesEvent(Event event) {
 		EventSummaryComponent component = adminEvents.findEventByName(event.getEventName());
 		DeleteEventDialog deleteDialog = component.deleteEvent(event);
@@ -122,28 +122,31 @@ public class AdminEventStepsFacade extends BaseFacadeSteps {
 		}
 		return true;
 	}
-	
+
 	public void whenUserUpdatesDataOfEvent(Event event) {
-		createEventPage.enterEventName(event.getEventName());
-		createEventPage.selectVenue(event.getVenue().getName());
-		createEventPage.enterDatesAndTimes(event.getStartDate(), event.getEndDate(), null, null, null);
-		createEventPage.waitForTime(1000);
+		eventPage.enterEventName(event.getEventName());
+		eventPage.selectVenue(event.getVenue().getName());
+		eventPage.enterDatesAndTimes(event.getStartDate(), event.getEndDate(), null, null, null);
+		eventPage.waitForTime(1000);
+	}
+
+	public EventPage getEventPage(){
+		return this.eventPage;
 	}
 
 	public void whenUserClicksOnUpdateEvent() {
-		createEventPage.clickOnUpdateButton();
+		eventPage.clickOnUpdateButton();
 	}
 
 	public boolean whenUserEntesDataAndClicksOnSaveDraft(Event event) {
 		adminEvents.clickCreateEvent();
-		createEventPage.isAtPage();
+		eventPage.isAtCreatePage();
 		createEventFillData(event);
-		createEventPage.clickOnSaveDraft();
-		boolean retVal = createEventPage.checkSaveDraftMessage();
+		eventPage.clickOnSaveDraft();
+		boolean retVal = eventPage.checkSaveDraftMessage();
 		return retVal;
-
 	}
-	
+
 	public void whenUserClicksOnViewEventOfSelecteEvent(Event event) {
 		EventSummaryComponent eventComp = findEventWithName(event);
 		eventComp.viewEvent();
@@ -166,18 +169,22 @@ public class AdminEventStepsFacade extends BaseFacadeSteps {
 			return false;
 		}
 	}
-	
+
+	public boolean thenUserIsAtEditPage() {
+		return eventPage.isAtEditPage();
+	}
+
 	public boolean thenUserIsAtEventsPage() {
 		return adminEvents.isAtPage();
 	}
-	
+
 	public void whenUserRefreshesThePage() {
 		driver.navigate().refresh();
 		adminEvents.waitForTime(3000);
 	}
 
 	public boolean thenMessageNotificationShouldAppear(String msg) {
-		return createEventPage.isNotificationDisplayedWithMessage(msg);
+		return eventPage.isNotificationDisplayedWithMessage(msg);
 	}
 
 	public boolean thenEventShouldBeDrafted(Event event) {
@@ -187,46 +194,46 @@ public class AdminEventStepsFacade extends BaseFacadeSteps {
 
 	public boolean createEvent(Event event) {
 		adminEvents.clickCreateEvent();
-		createEventPage.isAtPage();
+		eventPage.isAtCreatePage();
 		createEventFillData(event);
-		createEventPage.clickOnSave();
-		boolean retVal = createEventPage.checkMessage();
+		eventPage.clickOnSave();
+		boolean retVal = eventPage.checkMessage();
 		adminEvents.waitForTime(10000);
 		return retVal;
 	}
 
 	private void createEventFillData(Event event) {
-		createEventPage.enterArtistName(event.getArtistName());
-		createEventPage.enterEventName(event.getEventName());
-		createEventPage.selectVenue(event.getVenue().getName());
-		createEventPage.enterDatesAndTimes(event.getStartDate(), event.getEndDate(), event.getStartTime(),
+		eventPage.enterArtistName(event.getArtistName());
+		eventPage.enterEventName(event.getEventName());
+		eventPage.selectVenue(event.getVenue().getName());
+		eventPage.enterDatesAndTimes(event.getStartDate(), event.getEndDate(), event.getStartTime(),
 				event.getEndTime(), event.getDoorTime());
-		createEventPage.addTicketTypes(event.getTicketTypes());
+		eventPage.addTicketTypes(event.getTicketTypes());
 	}
 
 	public void whenUserExecutesMoveDatesToPastSteps(boolean isTestValid, SoftAssert sa, int minusStartDateDays, int minusEndDateDays) {
 		if (minusEndDateDays > minusStartDateDays) {
 			throw new IllegalArgumentException("start date must be before or same as end date");
 		}
-		LocalDate startDate = createEventPage.getStartDateValue();
-		LocalDate endDate = createEventPage.getEndDateValue();
+		LocalDate startDate = eventPage.getStartDateValue();
+		LocalDate endDate = eventPage.getEndDateValue();
 		LocalDate currentDate = LocalDate.now();
 		startDate = currentDate.minusDays(minusStartDateDays);
 		endDate = currentDate.minusDays(minusEndDateDays);
-		createEventPage.enterDates(startDate, endDate);
-		createEventPage.clickOnUpdateButton();
+		eventPage.enterDates(startDate, endDate);
+		eventPage.clickOnUpdateButton();
 		if (!isTestValid) {
-			boolean retVal = createEventPage.isNotificationDisplayedWithMessage(MsgConstants.INVALID_EVENT_DETAILS);
+			boolean retVal = eventPage.isNotificationDisplayedWithMessage(MsgConstants.INVALID_EVENT_DETAILS);
 			if (!retVal) {
-				retVal = createEventPage.isNotificationDisplayedWithMessage(MsgConstants.EVENT_WITH_SALES_CANT_MOVE_TO_PAST_DATE);
+				retVal = eventPage.isNotificationDisplayedWithMessage(MsgConstants.EVENT_WITH_SALES_CANT_MOVE_TO_PAST_DATE);
 			}
 			sa.assertTrue(retVal, MsgConstants.INVALID_EVENT_DETAILS + " message notification not displayed");
 		} else {
-			boolean retVal = createEventPage.isNotificationDisplayedWithMessage(MsgConstants.EVENT_PUBLISHED);
+			boolean retVal = eventPage.isNotificationDisplayedWithMessage(MsgConstants.EVENT_PUBLISHED);
 			sa.assertTrue(retVal, MsgConstants.EVENT_PUBLISHED + " message not displayed");
 		}
 	}
-	
+
 	public void attemptEventCancel(Event event) {
 		try {
 			givenUserIsOnAdminEventsPage();

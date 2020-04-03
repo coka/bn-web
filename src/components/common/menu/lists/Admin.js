@@ -70,14 +70,7 @@ const AdminList = props => {
 			>
 				Settings
 			</MenuItem>
-			<MenuItem
-				onClick={toggleDrawer}
-				shortLayout
-				iconName="megaphone"
-				to={"/admin/announcements"}
-			>
-				Announcements
-			</MenuItem>
+
 			<Divider style={{ marginTop: 10, marginBottom: 10 }}/>
 
 			<Typography
@@ -119,6 +112,14 @@ const AdminList = props => {
 				to="/admin/slugs"
 			>
 				Slugs
+			</MenuItem>
+			<MenuItem
+				onClick={toggleDrawer}
+				shortLayout
+				iconName="megaphone"
+				to={"/admin/announcements"}
+			>
+				Announcements
 			</MenuItem>
 			<MobileSwitchOrgMenuItem/>
 			<MobileBoxOfficeMenuItem onClick={toggleDrawer}/>

@@ -85,7 +85,7 @@ public class MoveEventDatesToPastStepsIT extends BaseSteps {
 
 	}
 
-	@Test(dataProvider = "move_event_dates_test_data", priority = 86, 
+	@Test(dataProvider = "move_event_dates_test_data", priority = 86,
 			dependsOnMethods="purchaseTicketsAndMoveEventDatesToPast" , alwaysRun = true,
 			retryAnalyzer = utils.RetryAnalizer.class)
 	public void refundAndMoveEventDatesToPast(User customer, User orgAdmin, Purchase purchase) throws Exception {
@@ -98,9 +98,9 @@ public class MoveEventDatesToPastStepsIT extends BaseSteps {
 		navigateAndRefundAllTickets(fp, event);
 		fp.getAdminEventStepsFacade().givenUserIsOnAdminEventsPage();
 		findEventAndExecuteMoveDatesSteps(fp, event, sa, false, 6, 3);
-		
+
 		fp.getAdminEventStepsFacade().attemptEventCancel(event);
-		fp.getLoginFacade().logOut();	
+		fp.getLoginFacade().logOut();
 	}
 
 	private void findEventAndExecuteMoveDatesSteps(FacadeProvider fp, Event event, SoftAssert sa,
@@ -108,7 +108,7 @@ public class MoveEventDatesToPastStepsIT extends BaseSteps {
 		fp.getOrganizationFacade().givenOrganizationExist(event.getOrganization());
 		fp.getAdminEventStepsFacade().thenUserIsAtEventsPage();
 		EventSummaryComponent eventComp = fp.getAdminEventStepsFacade().findEventWithName(event);
-		eventComp.whenUserSelectEditEventFromDropDown(event);
+		eventComp.clickOnEditEvent(event);
 		fp.getAdminEventStepsFacade().whenUserExecutesMoveDatesToPastSteps(expectedResult, sa, startDaysSubtract,
 				endDaysSubtract);
 	}

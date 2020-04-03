@@ -5,7 +5,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -18,13 +17,13 @@ import utils.Constants;
 import utils.SeleniumUtils;
 
 public class Header extends BaseComponent {
-	
+
 	@FindBy(xpath = "//header")
 	private WebElement header;
 
 	@FindBy(css = "header form input")
 	private WebElement searchEvents;
-	
+
 	@FindBy(xpath = "//header//a/img[@alt='Header logo']")
 	private WebElement headerLogo;
 
@@ -43,8 +42,11 @@ public class Header extends BaseComponent {
 	@FindBy(xpath = "//body//header//a[@href='/admin/events']/div")
 	private WebElement toStudioButton;
 
-	@FindBy(xpath = "//body//header//div[span[@aria-owns='menu-appbar']//span[contains(text(),'Current organization')]]")
+	@FindBy(xpath = "//body//header//div[span[@aria-owns='menu-appbar' and @aria-haspopup='true']//span[contains(text(),'Current organization')]]")
 	private WebElement currentOrganizationDropDown;
+
+	@FindBy(xpath = "//body//header//div[span[@aria-owns='menu-appbar' and @aria-haspopup='true']]//div[span[contains(text(),'Current organization')]]/h3")
+	private WebElement selectedOrganization;
 
 	@FindBy(xpath = "//header//span[a[contains(@href,'tickets/confirmation')]]|//header//span/div[contains(@to,'tickets/confirmation')]")
 	private WebElement shoppingBasket;
@@ -54,7 +56,7 @@ public class Header extends BaseComponent {
 
 	@FindBy(xpath = "//header//a[@href='/admin/events']/following-sibling::div[2][span[@aria-owns='menu-appbar' and @aria-haspopup='true']]")
 	private WebElement adminEventDropDownButton;
-	
+
 	@FindBy(xpath = "//header/div/div[2]//span[@aria-owns='menu-appbar' and @aria-haspopup='true']")
 	private WebElement boxOfficeEventDropDownButton;
 
@@ -67,11 +69,11 @@ public class Header extends BaseComponent {
 		super(driver);
 		profileMenuDropDown = new ProfileMenuDropDown(driver);
 	}
-	
+
 	public boolean isVisible(int waitTime) {
 		return isExplicitlyWaitVisible(waitTime, header);
 	}
-	
+
 	public void clickOnHeaderLogo() {
 		waitVisibilityAndBrowserCheckClick(headerLogo);
 	}
@@ -88,7 +90,7 @@ public class Header extends BaseComponent {
 			searchEvents.submit();
 		}
 	}
-	
+
 	public void clickOnSignInButton() {
 		if (isVisible(4)) {
 			explicitWaitForVisibilityAndClickableWithClick(signInButton);
@@ -120,8 +122,8 @@ public class Header extends BaseComponent {
 		}
 		waitForTime(1000);
 	}
-	
-	
+
+
 	public void clickOnMyEvents() {
 		openProfileOptions();
 		profileMenuDropDown.myEventsClick();
@@ -152,20 +154,27 @@ public class Header extends BaseComponent {
 	}
 
 	public boolean isOrganizationPresent(String organizationName) {
-		waitVisibilityAndClick(currentOrganizationDropDown);
-		CurrentOrganizationDropDown dropDown = new CurrentOrganizationDropDown(driver);
 		boolean retVal = false;
-		try {
-			dropDown.findOrganizationByName(organizationName);
-			retVal = true;
-		} catch (Exception e) {
-			retVal = false;
+		if (isExplicitlyWaitVisible(selectedOrganization)){
+			if(selectedOrganization.getText().equals(organizationName)){
+				return true;
+			}
 		}
-		//close the drop down
-		WebElement element = explicitWait(15,
-				ExpectedConditions.visibilityOfElementLocated(By.xpath("//body//div[@id='menu-appbar']")));
-		element.click();
-		
+		if(isExplicitlyWaitVisible(currentOrganizationDropDown)) {
+			waitVisibilityAndBrowserCheckClick(currentOrganizationDropDown);
+			CurrentOrganizationDropDown dropDown = new CurrentOrganizationDropDown(driver);
+			try {
+				dropDown.findOrganizationByName(organizationName);
+				retVal = true;
+			} catch (Exception e) {
+				retVal = false;
+			}
+			//close the drop down
+			WebElement element = explicitWait(15,
+					ExpectedConditions.visibilityOfElementLocated(By.xpath("//body//div[@id='menu-appbar']")));
+			element.click();
+		}
+
 		return retVal;
 	}
 
@@ -184,7 +193,7 @@ public class Header extends BaseComponent {
 					return true;
 				}
 			}
-			
+
 		}
 		return false;
 	}
@@ -201,7 +210,7 @@ public class Header extends BaseComponent {
 	}
 
 	/**
-	 * opens event select drop down for superadmin users 
+	 * opens event select drop down for superadmin users
 	 * @param eventName
 	 */
 	public void selectEventFromAdminDropDown(String eventName) {
@@ -210,7 +219,7 @@ public class Header extends BaseComponent {
 				By.xpath(".//ul//li//div/span[contains(text(),'" + eventName + "')]"));
 		waitForTime(2000);
 	}
-	
+
 	/**
 	 * opens event select drop down for boxOffice user
 	 * @param eventName

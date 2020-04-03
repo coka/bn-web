@@ -32,32 +32,6 @@ import { LibraryAdd } from "@material-ui/icons";
 import { Pagination, urlPageParam } from "../../../elements/pagination";
 import Settings from "../../../../config/settings";
 
-const styles = theme => ({
-	paper: {
-		display: "flex"
-	},
-	cardContent: {
-		padding: theme.spacing.unit * 2,
-		marginBottom: theme.spacing.unit,
-		flex: "1 0 auto"
-	},
-	actionButtons: {
-		padding: theme.spacing.unit
-	},
-	rightHeaderOptions: {
-		display: "flex",
-		justifyContent: "flex-end",
-		alignContent: "center"
-	},
-	menuContainer: {
-		display: "flex",
-		padding: theme.spacing.unit * 2.5
-	},
-	menuText: {
-		marginRight: theme.spacing.unit * 4
-	}
-});
-
 class EventsList extends Component {
 	constructor(props) {
 		super(props);
@@ -322,6 +296,7 @@ class EventsList extends Component {
 							eventEnded={eventEnded}
 							publishDate={event.publish_date}
 							status={event.status}
+							overrideStatus={event.override_status}
 						/>
 					</Grid>
 				);
@@ -429,5 +404,31 @@ class EventsList extends Component {
 		);
 	}
 }
+
+const styles = theme => ({
+	paper: {
+		display: "flex"
+	},
+	cardContent: {
+		padding: theme.spacing.unit * 2,
+		marginBottom: theme.spacing.unit,
+		flex: "1 0 auto"
+	},
+	actionButtons: {
+		padding: theme.spacing.unit
+	},
+	rightHeaderOptions: {
+		display: "flex",
+		justifyContent: "flex-end",
+		alignContent: "center"
+	},
+	menuContainer: {
+		display: "flex",
+		padding: theme.spacing.unit * 2.5
+	},
+	menuText: {
+		marginRight: theme.spacing.unit * 4
+	}
+});
 
 export default withStyles(styles)(EventsList);

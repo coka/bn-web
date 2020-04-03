@@ -1,15 +1,20 @@
 package model;
 
 import java.io.Serializable;
+import java.util.List;
+
+import org.testng.asserts.SoftAssert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import model.interfaces.IAssertable;
+import model.interfaces.IAssertableField;
 import utils.DataReader;
 import utils.ProjectUtils;
 
 
-public class Venue extends Model implements Serializable {
+public class Venue extends Model implements Serializable,IAssertable<Venue> {
 
 	private static final long serialVersionUID = 7824190591509663973L;
 	@JsonProperty("name")
@@ -39,7 +44,63 @@ public class Venue extends Model implements Serializable {
 
 	@JsonProperty("image_name")
 	private String imageName;
-
+	
+	public enum VenueField implements IAssertableField {
+		NAME,
+		ORGANIZATION,
+		TIMEZONE,
+		REGION,
+		PHONE_NUMBER,
+		ADDRESS,
+		CITY,
+		ZIP,
+		STATE,
+		STATE_ABBR,
+		COUNTRY,
+		COUNTRY_ABBR,
+	}
+	
+	@Override
+	public void assertEquals(SoftAssert sa, Object obj, List<IAssertableField> fields) {
+		Venue other = isCorrectType(obj);
+		for(IAssertableField fieldEnum : fields) {
+			switch ((VenueField)fieldEnum) {
+				case NAME:
+					assertEquals(sa, fieldEnum, this.getName(), other.getName());
+					break;
+				case ORGANIZATION:
+					assertEquals(sa, fieldEnum, this.getOrganization(), other.getOrganization());
+					break;
+				case TIMEZONE:
+					assertEquals(sa, fieldEnum, this.getTimezone(), other.getTimezone());
+					break;
+				case REGION:
+					assertEquals(sa, fieldEnum, this.getRegion(), other.getRegion());
+					break;
+				case PHONE_NUMBER:
+					assertEquals(sa, fieldEnum, this.getPhoneNumber(), other.getPhoneNumber());
+					break;
+				case ZIP:
+					assertEquals(sa, fieldEnum, this.getZip(), other.getZip());
+					break;
+				case STATE:
+					assertEquals(sa, fieldEnum, this.getState(), other.getState());
+					break;
+				case STATE_ABBR:
+					assertEquals(sa, fieldEnum, this.getStateAbbr(), other.getStateAbbr());
+					break;
+				case COUNTRY:
+					assertEquals(sa, fieldEnum, this.getCountry(), other.getCountry());
+					break;
+				case COUNTRY_ABBR:
+					assertEquals(sa, fieldEnum, this.getCountryAbbr(), other.getCountryAbbr());
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	
 	public String getName() {
 		return name;
 	}

@@ -38,6 +38,7 @@ import CheckoutSelection from "../pages/events/CheckoutSelection";
 import CheckoutConfirmation from "../pages/events/CheckoutConfirmation";
 import CheckoutSuccess from "../pages/events/CheckoutSuccess";
 import MobileStripeAuth from "../pages/authentication/MobileStripeAuth";
+import SMSLinkPage from "../pages/events/SMSTicketsLink";
 
 // Development
 import ElementShowcase from "../pages/development/ElementShowCase";
@@ -194,8 +195,8 @@ class Routes extends Component {
 					decodeJWT(access_token);
 					localStorage.setItem("access_token", access_token);
 				}
-				decodeJWT(refresh_token);
 
+				decodeJWT(refresh_token);
 				localStorage.setItem("refresh_token", refresh_token);
 				user.refreshUser();
 			} catch (e) {
@@ -307,6 +308,11 @@ class Routes extends Component {
 								<Route exact path="/venues/:id" component={ViewVenue}/>
 								{/*to be tickets only NOT events */}
 								<Route exact path="/tickets/:id" component={ViewEvent}/>
+								<Route
+									exact
+									path="/send-download-link"
+									component={SMSLinkPage}
+								/>
 								<Route
 									exact
 									path="/tickets/:id/tickets"
@@ -607,7 +613,6 @@ class Routes extends Component {
 									component={GuestList}
 									isAuthenticated={isAuthenticated}
 								/>
-
 								{/* TODO these will be moved into their own Routes.js when web pack is changes to serve different compiled bundles */}
 								<Route exact path="/widget/qr/:id" component={EventQR}/>
 								<Route

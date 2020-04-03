@@ -4,7 +4,7 @@ import notifications from "./notifications";
 
 class Announcement {
 	@observable
-	messages = null;
+	messages = [];
 
 	@observable
 	message = null;
@@ -32,8 +32,9 @@ class Announcement {
 			const { data } = await Bigneon().organizations.announcements.index({
 				organization_id
 			});
+			this.messages = [];
 			data.forEach(orgMsg => {
-				this.message = orgMsg;
+				this.messages.push(orgMsg);
 			});
 		} catch (error) {
 			if (error.status !== 404) {

@@ -19,7 +19,7 @@
 			<class name="test.PublishEventWithDeleteEventIT" />
 			<class name="test.BoxOfficeSellTicketStepsIT" />
 			<class name="test.VenueStepsIT" />
-			<class name="test.FanManagementStepsIT" /> 
+			<class name="test.FanManagementStepsIT" />
 			<class name="test.RefundOnlyOrderFeeStepsIT" />
 			<class name="test.RefundEntireOrderAndOrderFeeStepsIT" />
 			<class name="test.RefundEntireOrderExcludingOrderFeeStepsIT" />
@@ -31,6 +31,7 @@
 			<class name="test.refund.override.RefundOverrideEntireOrderWithOutFees"/>
 			<class name="test.pastdates.MoveEventDatesToPastStepsIT" />
 			<class name="test.confirmation.mail.ResendConfirmationMailStepsIT" />
+			<class name="test.event.overview.EventOverviewStepsIT" />
 		</classes>
 	</test>
 </suite>

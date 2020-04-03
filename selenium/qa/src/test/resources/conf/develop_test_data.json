@@ -166,6 +166,12 @@
 		"start_time": "08:30 PM",
 		"end_time": "10:00 PM",
 		"door_time": "1",
+		"artists":[
+			{
+				"name":"TheTestArtistAuto",
+				"description":"the artist that wanted to be auto"
+			}
+		],
 		"ticket_types": [
 			{
 				"ticket_type_name": "GA",
@@ -175,6 +181,10 @@
 					"sale_start": {
 						"label": "Immediately",
 						"value": "immediately"
+					},
+					"sale_end":{
+						"label": "Event End",
+						"value": "close"
 					},
 					"max_tickets_per_customer":"50"
 				}
@@ -205,6 +215,10 @@
 					"sale_start": {
 						"label": "When sales end for...",
 						"value": "parent"
+					},
+					"sale_end":{
+						"label": "Event End",
+						"value": "close"
 					},
 					"start_sale_ticket_type": "VIP"
 				}
@@ -378,7 +392,7 @@
 		"timezone":"America/Indiana/Knox",
 		"region":"No Region",
 		"phone_number":"123456789012",
-		"address":"1700 SW Jewell Ave, Topeka",
+		"address":"1700 SW Jewell Ave",
 		"city":"Topeka",
 		"zip":"66621",
 		"state":"Kansas",
@@ -393,7 +407,7 @@
 		"region":"No Region",
 		"organization_name":"TA_TZ_Org",
 		"phone_number":"123456789012",
-		"address":"301 Van Ness Ave, San Francisco",
+		"address":"301 Van Ness Ave",
 		"city":"San Francisco",
 		"zip":"94102",
 		"state": "California",
@@ -423,7 +437,7 @@
 		"timezone":"America/Indiana/Knox",
 		"region":"No Region",
 		"phone_number":"123456789012",
-		"address":"1700 SW Jewell Ave, Topeka",
+		"address":"1700 SW Jewell Ave",
 		"city":"Topeka",
 		"zip":"66621",
 		"state":"Kansas",
@@ -438,7 +452,7 @@
 		"timezone":"America/Indiana/Knox",
 		"region":"No Region",
 		"phone_number":"123456789012",
-		"address":"1700 SW Jewell Ave, Topeka",
+		"address":"1700 SW Jewell Ave",
 		"city":"Topeka",
 		"zip":"66621",
 		"state":"Kansas",
