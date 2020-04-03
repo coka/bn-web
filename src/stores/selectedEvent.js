@@ -52,7 +52,19 @@ class SelectedEvent {
 					sales_start_date,
 					user_is_interested
 				} = response.data;
-				this.ticket_types = ticket_types;
+
+				//If we have a promo code, load it first to apply to the new ticket types retrieved
+				if (this.currentlyAppliedCode) {
+					this.applyRedemptionCode(
+						this.currentlyAppliedCode,
+						ticket_types,
+						() => {},
+						() => {}
+					);
+				} else {
+					this.ticket_types = ticket_types;
+				}
+
 				this.user_is_interested = user_is_interested;
 			})
 			.catch(e => {
@@ -135,20 +147,11 @@ class SelectedEvent {
 					promo_image_url: promo_image_url || "/images/event-placeholder.png"
 				};
 
-				//If we have a promo code, load it first to apply to the new ticket types retrieved
-				if (this.currentlyAppliedCode) {
-					this.applyRedemptionCode(
-						this.currentlyAppliedCode,
-						this.ticket_types,
-						() => {},
-						() => {}
-					);
-				}
-
 				//If we got the code from this store, append it to the url for any route changes
 				if (private_access_code) {
 					changeUrlParam("private_access_code", private_access_code);
 				}
+
 				onSuccess(this.ticket_types);
 			})
 			.catch(error => {
