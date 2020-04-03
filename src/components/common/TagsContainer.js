@@ -18,7 +18,7 @@ class TagsContainer extends React.Component {
 
 		let tags = null;
 		if (cancelled) {
-			tags = <Typography className={styles.cancelled}>Cancelled</Typography>;
+			tags = <ColorTag variant="disabled">Cancelled</ColorTag>;
 		} else {
 			let onSaleTag = null;
 			let overrideTag = null;
