@@ -98,20 +98,11 @@ class SelectedEvent {
 			.then(response => {
 				const { artists, organization, venue, ...event } = response.data;
 
-				const {
-					id,
-					event_start,
-					door_time,
-					promo_image_url,
-					ticket_types,
-					user_is_interested
-				} = event;
+				const { id, event_start, door_time, promo_image_url } = event;
 
 				this.getTickets(id);
 
-				// this.ticket_types = ticket_types;
 				this.organization = organization;
-				this.user_is_interested = user_is_interested;
 				artists.sort((a, b) => {
 					const rank1 = a.rank || 0;
 					const rank2 = b.rank || 0;
@@ -148,20 +139,17 @@ class SelectedEvent {
 				if (this.currentlyAppliedCode) {
 					this.applyRedemptionCode(
 						this.currentlyAppliedCode,
-						ticket_types,
+						this.ticket_types,
 						() => {},
 						() => {}
 					);
-				} else {
-					//If we're not using a promo code, just set the ticket types as is
-					this.ticket_types = ticket_types;
 				}
 
 				//If we got the code from this store, append it to the url for any route changes
 				if (private_access_code) {
 					changeUrlParam("private_access_code", private_access_code);
 				}
-				onSuccess(ticket_types);
+				onSuccess(this.ticket_types);
 			})
 			.catch(error => {
 				console.error(error);
