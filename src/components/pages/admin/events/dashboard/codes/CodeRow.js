@@ -20,163 +20,6 @@ import CustomTooltip from "../../../../../elements/Tooltip";
 import Divider from "../../../../../common/Divider";
 import servedImage from "../../../../../../helpers/imagePathHelper";
 
-const styles = theme => {
-	return {
-		desktopCard: {
-			display: "flex",
-			height: 70,
-			alignItems: "center",
-			marginTop: theme.spacing.unit * 2,
-			paddingLeft: theme.spacing.unit * 2,
-			paddingRight: theme.spacing.unit * 2
-		},
-		desktopIcon: {
-			marginLeft: theme.spacing.unit * 2,
-			width: 14,
-			height: 14,
-			cursor: "pointer"
-		},
-		nameSpan: {
-			flex: 4,
-			display: "flex",
-			alignItems: "center",
-			maxWidth: "90%"
-		},
-		nameText: {
-			fontFamily: fontFamilyDemiBold,
-			textAlign: "left",
-			overflow: "hidden",
-			whiteSpace: "nowrap",
-			textOverflow: "ellipsis",
-			maxWidth: "80%"
-		},
-		codeText: {
-			color: textColorPrimary,
-			flex: 3,
-			textAlign: "left",
-			overflow: "hidden",
-			textOverflow: "ellipsis",
-			maxWidth: "80%"
-		},
-		desktopActionButtonGroup: {
-			flex: 3,
-			textAlign: "right"
-		},
-		typeText: {
-			flex: 2
-		},
-		timesUsedText: {
-			flex: 2,
-			color: textColorPrimary
-		},
-		timesUsedActiveText: {
-			flex: 2,
-			color: secondaryHex
-		},
-		ticketTypesContainer: {
-			flex: 2
-		},
-		ticketTypeContainer: {
-			float: "left",
-			marginRight: 5,
-			display: "flex",
-			flexDirection: "column",
-			justifyContent: "center"
-		},
-		limitedWidthTicketTypeContainer: {
-			maxWidth: 100,
-
-			[theme.breakpoints.down("sm")]: {
-				maxWidth: 200
-			}
-		},
-		additionalTicketTypeText: {
-			fontFamily: fontFamilyDemiBold,
-			color: secondaryHex,
-			cursor: "pointer"
-		},
-		tooltipPopper: {},
-		tooltipContent: {
-			backgroundColor: "#FFFFFF",
-			boxShadow: "0px 4px 15px 0px rgba(112, 124, 237, 0.17)",
-			display: "inline-block",
-			maxWidth: 400,
-			overflow: "hidden"
-		},
-		discountText: {
-			flex: 2
-		},
-		dot: {
-			backgroundColor: "#dfdfdf",
-			width: 7,
-			height: 7,
-			borderRadius: 5,
-			marginBottom: 4
-		},
-		dotActive: {
-			backgroundColor: "#47c68a"
-		},
-
-		mobileCard: {
-			borderRadius: 6,
-			marginTop: theme.spacing.unit * 2,
-			padding: theme.spacing.unit * 2
-		},
-		mobileSummarySection: {
-			// display: "flex",
-			// alignItems: "center"
-		},
-		mobileRow: {
-			display: "flex",
-			flex: 1,
-			justifyContent: "space-between"
-		},
-		mobileHeading: {
-			textTransform: "uppercase",
-			fontSize: theme.typography.fontSize * 0.75,
-			color: textColorPrimary
-		},
-		mobileValue: {
-			fontSize: theme.typography.fontSize * 0.75,
-			fontFamily: fontFamilyDemiBold
-		},
-		timesUsedActiveTextMobile: {
-			textAlign: "right"
-		},
-		codeTextMobile: {
-			color: textColorPrimary,
-			overflow: "hidden",
-			textOverflow: "ellipsis"
-			// fontFamily: fontFamilyDemiBold
-		},
-		mobileExpandedSection: {
-			paddingTop: theme.spacing.unit * 2
-		},
-		mobileTicketTypesContainer: {
-			paddingTop: theme.spacing.unit
-		},
-		mobileActionButtonGroup: {
-			flex: 1,
-			display: "flex",
-			justifyContent: "space-between",
-			paddingTop: theme.spacing.unit * 2
-		},
-		mobileActionLabel: {
-			fontFamily: fontFamilyDemiBold,
-			fontSize: theme.typography.fontSize * 0.75,
-			marginLeft: 4
-		},
-		mobileActionButtonContainer: {
-			display: "flex"
-		},
-		mobileIcon: {
-			width: 12,
-			height: 12,
-			cursor: "pointer"
-		}
-	};
-};
-
 const getTagVariantFromTicketStatus = status => {
 	switch (status) {
 		case "SoldOut":
@@ -386,10 +229,9 @@ const CodeRow = props => {
 		codeIsCopied,
 		active,
 		onExpand,
-		expanded
+		expanded,
+		totalUses
 	} = props;
-
-	const timesUsed = maxUses - available;
 
 	const actions = [
 		{
@@ -446,10 +288,10 @@ const CodeRow = props => {
 					<Typography
 						className={classNames({
 							[classes.timesUsedText]: true,
-							[classes.timesUsedActiveText]: timesUsed > 0
+							[classes.timesUsedActiveText]: totalUses > 0
 						})}
 					>
-						{timesUsed}
+						{totalUses}
 					</Typography>
 					<Typography className={classes.discountText}>
 						{discountText}
@@ -485,11 +327,11 @@ const CodeRow = props => {
 							<Typography
 								className={classNames({
 									[classes.timesUsedText]: true,
-									[classes.timesUsedActiveText]: timesUsed > 0,
+									[classes.timesUsedActiveText]: totalUses > 0,
 									[classes.timesUsedActiveTextMobile]: true
 								})}
 							>
-								{timesUsed}
+								{totalUses}
 							</Typography>
 						</div>
 					</div>
@@ -560,7 +402,7 @@ CodeRow.propTypes = {
 			status: PropTypes.string.isRequired
 		})
 	).isRequired,
-	available: PropTypes.number.isRequired,
+	available: PropTypes.number,
 	maxUses: PropTypes.number.isRequired,
 	discountText: PropTypes.string.isRequired,
 	hasWriteAccess: PropTypes.bool.isRequired,
@@ -570,7 +412,165 @@ CodeRow.propTypes = {
 	type: PropTypes.oneOf(["Access", "Discount"]).isRequired,
 	active: PropTypes.bool.isRequired,
 	onExpand: PropTypes.func.isRequired,
-	expanded: PropTypes.bool.isRequired
+	expanded: PropTypes.bool.isRequired,
+	totalUses: PropTypes.number.isRequired
+};
+
+const styles = theme => {
+	return {
+		desktopCard: {
+			display: "flex",
+			height: 70,
+			alignItems: "center",
+			marginTop: theme.spacing.unit * 2,
+			paddingLeft: theme.spacing.unit * 2,
+			paddingRight: theme.spacing.unit * 2
+		},
+		desktopIcon: {
+			marginLeft: theme.spacing.unit * 2,
+			width: 14,
+			height: 14,
+			cursor: "pointer"
+		},
+		nameSpan: {
+			flex: 4,
+			display: "flex",
+			alignItems: "center",
+			maxWidth: "90%"
+		},
+		nameText: {
+			fontFamily: fontFamilyDemiBold,
+			textAlign: "left",
+			overflow: "hidden",
+			whiteSpace: "nowrap",
+			textOverflow: "ellipsis",
+			maxWidth: "80%"
+		},
+		codeText: {
+			color: textColorPrimary,
+			flex: 3,
+			textAlign: "left",
+			overflow: "hidden",
+			textOverflow: "ellipsis",
+			maxWidth: "80%"
+		},
+		desktopActionButtonGroup: {
+			flex: 3,
+			textAlign: "right"
+		},
+		typeText: {
+			flex: 2
+		},
+		timesUsedText: {
+			flex: 2,
+			color: textColorPrimary
+		},
+		timesUsedActiveText: {
+			flex: 2,
+			color: secondaryHex
+		},
+		ticketTypesContainer: {
+			flex: 2
+		},
+		ticketTypeContainer: {
+			float: "left",
+			marginRight: 5,
+			display: "flex",
+			flexDirection: "column",
+			justifyContent: "center"
+		},
+		limitedWidthTicketTypeContainer: {
+			maxWidth: 100,
+
+			[theme.breakpoints.down("sm")]: {
+				maxWidth: 200
+			}
+		},
+		additionalTicketTypeText: {
+			fontFamily: fontFamilyDemiBold,
+			color: secondaryHex,
+			cursor: "pointer"
+		},
+		tooltipPopper: {},
+		tooltipContent: {
+			backgroundColor: "#FFFFFF",
+			boxShadow: "0px 4px 15px 0px rgba(112, 124, 237, 0.17)",
+			display: "inline-block",
+			maxWidth: 400,
+			overflow: "hidden"
+		},
+		discountText: {
+			flex: 2
+		},
+		dot: {
+			backgroundColor: "#dfdfdf",
+			width: 7,
+			height: 7,
+			borderRadius: 5,
+			marginBottom: 4
+		},
+		dotActive: {
+			backgroundColor: "#47c68a"
+		},
+
+		mobileCard: {
+			borderRadius: 6,
+			marginTop: theme.spacing.unit * 2,
+			padding: theme.spacing.unit * 2
+		},
+		mobileSummarySection: {
+			// display: "flex",
+			// alignItems: "center"
+		},
+		mobileRow: {
+			display: "flex",
+			flex: 1,
+			justifyContent: "space-between"
+		},
+		mobileHeading: {
+			textTransform: "uppercase",
+			fontSize: theme.typography.fontSize * 0.75,
+			color: textColorPrimary
+		},
+		mobileValue: {
+			fontSize: theme.typography.fontSize * 0.75,
+			fontFamily: fontFamilyDemiBold
+		},
+		timesUsedActiveTextMobile: {
+			textAlign: "right"
+		},
+		codeTextMobile: {
+			color: textColorPrimary,
+			overflow: "hidden",
+			textOverflow: "ellipsis"
+			// fontFamily: fontFamilyDemiBold
+		},
+		mobileExpandedSection: {
+			paddingTop: theme.spacing.unit * 2
+		},
+		mobileTicketTypesContainer: {
+			paddingTop: theme.spacing.unit
+		},
+		mobileActionButtonGroup: {
+			flex: 1,
+			display: "flex",
+			justifyContent: "space-between",
+			paddingTop: theme.spacing.unit * 2
+		},
+		mobileActionLabel: {
+			fontFamily: fontFamilyDemiBold,
+			fontSize: theme.typography.fontSize * 0.75,
+			marginLeft: 4
+		},
+		mobileActionButtonContainer: {
+			display: "flex"
+		},
+		mobileIcon: {
+			width: 12,
+			height: 12,
+			cursor: "pointer"
+		}
+	};
 };
 
 export default withStyles(styles)(CodeRow);

@@ -18,43 +18,6 @@ import {
 } from "../../../../../../config/theme";
 import copyToClipboard from "../../../../../../helpers/copyToClipboard";
 
-const styles = theme => ({
-	root: {},
-	shareableLinkContainer: {
-		marginTop: theme.spacing.unit * 2,
-		marginBottom: theme.spacing.unit * 2
-	},
-	shareableLinkText: {
-		color: secondaryHex,
-		fontSize: theme.typography.fontSize * 0.9
-	},
-	pageSubTitle: {
-		fontFamily: fontFamilyDemiBold,
-		fontSize: theme.typography.fontSize * 0.75,
-		textTransform: "uppercase",
-		color: secondaryHex
-	},
-	pageTitle: {
-		fontFamily: fontFamilyDemiBold,
-		fontSize: theme.typography.fontSize * 1.75
-	},
-	mobilePageTitleContainer: {
-		marginTop: theme.spacing.unit * 2,
-		marginBottom: theme.spacing.unit * 2
-	},
-	desktopHeadingRow: {
-		display: "flex",
-		paddingLeft: theme.spacing.unit * 2,
-		paddingRight: theme.spacing.unit * 2
-	},
-	desktopHeadingText: {
-		fontFamily: fontFamilyDemiBold
-	},
-	desktopCTAButtonContainer: {
-		display: "flex"
-	}
-});
-
 class CodeList extends Component {
 	constructor(props) {
 		super(props);
@@ -299,7 +262,8 @@ class CodeList extends Component {
 							max_uses,
 							available,
 							code_type,
-							active
+							active,
+							total_uses
 						} = c;
 
 						const ticketTypesList = [];
@@ -351,6 +315,7 @@ class CodeList extends Component {
 								onExpand={() =>
 									this.setState({ expandRowId: expandRowId === id ? null : id })
 								}
+								totalUses={total_uses}
 							/>
 						);
 					})}
@@ -548,5 +513,42 @@ class CodeList extends Component {
 		);
 	}
 }
+
+const styles = theme => ({
+	root: {},
+	shareableLinkContainer: {
+		marginTop: theme.spacing.unit * 2,
+		marginBottom: theme.spacing.unit * 2
+	},
+	shareableLinkText: {
+		color: secondaryHex,
+		fontSize: theme.typography.fontSize * 0.9
+	},
+	pageSubTitle: {
+		fontFamily: fontFamilyDemiBold,
+		fontSize: theme.typography.fontSize * 0.75,
+		textTransform: "uppercase",
+		color: secondaryHex
+	},
+	pageTitle: {
+		fontFamily: fontFamilyDemiBold,
+		fontSize: theme.typography.fontSize * 1.75
+	},
+	mobilePageTitleContainer: {
+		marginTop: theme.spacing.unit * 2,
+		marginBottom: theme.spacing.unit * 2
+	},
+	desktopHeadingRow: {
+		display: "flex",
+		paddingLeft: theme.spacing.unit * 2,
+		paddingRight: theme.spacing.unit * 2
+	},
+	desktopHeadingText: {
+		fontFamily: fontFamilyDemiBold
+	},
+	desktopCTAButtonContainer: {
+		display: "flex"
+	}
+});
 
 export default withStyles(styles)(CodeList);
