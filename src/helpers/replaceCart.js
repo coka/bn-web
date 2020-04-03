@@ -10,6 +10,8 @@ export default (submitAttempted, ticketSelection, history, component) => {
 	const { id, event } = selectedEvent;
 	cart.setLatestEventId(id);
 
+	clearTimeout(this.debounce);
+
 	submitAttempted = true;
 	if (!cartValidateFields(submitAttempted, ticketSelection)) {
 		console.warn("Validation errors: ");
