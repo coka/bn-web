@@ -12,6 +12,7 @@ import Loader from "../../../../../../elements/loaders/Loader";
 import user from "../../../../../../../stores/user";
 import Dialog from "../../../../../../elements/Dialog";
 import copyToClipboard from "../../../../../../../helpers/copyToClipboard";
+import { action } from "mobx";
 
 const styles = theme => ({
 	root: {},
@@ -65,9 +66,9 @@ class ChildrenList extends Component {
 
 	loadEventDetails() {
 		Bigneon()
-			.events.read({ id: this.eventId })
+			.events.availability({ id: this.eventId })
 			.then(response => {
-				const { name, ticket_types } = response.data;
+				const { ticket_types } = response.data;
 				this.setState({
 					ticketTypes: ticket_types
 				});
