@@ -234,7 +234,8 @@ class CheckoutSelection extends Component {
 		const addToCart = replaceCart(
 			true,
 			ticketSelection,
-			history
+			history,
+			"selection"
 		);
 		this.setState({ isSubmitting: addToCart });
 	}

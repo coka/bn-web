@@ -6,7 +6,7 @@ import getAllUrlParams from "./getAllUrlParams";
 import cartValidateFields from "./cartValidateFields";
 import selectedEvent from "../stores/selectedEvent";
 
-export default (submitAttempted, ticketSelection, history) => {
+export default (submitAttempted, ticketSelection, history, component) => {
 	const { id, event } = selectedEvent;
 	cart.setLatestEventId(id);
 
@@ -39,49 +39,54 @@ export default (submitAttempted, ticketSelection, history) => {
 			message: "Select tickets first."
 		});
 	}
-
-	cart.replace(
-		ticketSelection,
-		data => {
-			if (!emptySelection) {
-				const cartItems = [];
-				for (let i = 0; i < data.items.length; i++) {
-					if (data.items[i].item_type === "Tickets") {
-						cartItems.push({
-							eventId: event.id,
-							name: event.name,
-							category: event.event_type,
-							organizationId: event.organization_id,
-							ticketTypeName: data.items[i].description,
-							price: data.items[i].unit_price_in_cents / 100,
-							quantity: data.items[i].quantity
-						});
+	this.debounce = setTimeout(async () => {
+		try {
+			await cart.replace(
+				ticketSelection,
+				data => {
+					if (!emptySelection) {
+						const cartItems = [];
+						for (let i = 0; i < data.items.length; i++) {
+							if (data.items[i].item_type === "Tickets") {
+								cartItems.push({
+									eventId: event.id,
+									name: event.name,
+									category: event.event_type,
+									organizationId: event.organization_id,
+									ticketTypeName: data.items[i].description,
+									price: data.items[i].unit_price_in_cents / 100,
+									quantity: data.items[i].quantity
+								});
+							}
+						}
+						const total = data.total_in_cents / 100;
+						analytics.initiateCheckout(
+							event.id,
+							getAllUrlParams(),
+							"USD",
+							cartItems,
+							total
+						);
+						component === "selection" && history.push(`/tickets/${id}/tickets/confirmation${window.location.search}`);
+					} else {
+						//They had something in their cart, but they removed and updated
+						return false;
 					}
+				},
+				error => {
+					const formattedError = notifications.showFromErrorResponse({
+						error,
+						defaultMessage: "Failed to add to cart.",
+						variant: "error"
+					});
+
+					console.error(formattedError);
+
+					return false;
 				}
-				const total = data.total_in_cents / 100;
-				analytics.initiateCheckout(
-					event.id,
-					getAllUrlParams(),
-					"USD",
-					cartItems,
-					total
-				);
-				history.push(`/tickets/${id}/tickets/confirmation${window.location.search}`);
-			} else {
-				//They had something in their cart, but they removed and updated
-				return false;
-			}
-		},
-		error => {
-			const formattedError = notifications.showFromErrorResponse({
-				error,
-				defaultMessage: "Failed to add to cart.",
-				variant: "error"
-			});
-
-			console.error(formattedError);
-
-			return false;
+			);
+		} catch (e) {
+			console.error(e);
 		}
-	);
+	}, 500);
 };

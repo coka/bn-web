@@ -46,7 +46,7 @@ export default (ticketSelection, errors, component) => {
 					: available;
 
 			this.submitAttempted = true;
-			
+
 			return (
 				<TicketSelection
 					key={id}

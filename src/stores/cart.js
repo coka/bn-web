@@ -91,7 +91,7 @@ class Cart {
 			});
 	}
 
-	replaceCartData(data, callback) {
+	async replaceCartData(data, callback) {
 		const {
 			id,
 			items,
@@ -151,28 +151,21 @@ class Cart {
 	}
 
 	@action
-	replace(selectedTickets, onSuccess, onError) {
+	async replace(selectedTickets, onSuccess, onError) {
 		const items = itemListToSave(selectedTickets);
-		Bigneon()
-			.cart.replace({
-				items,
-				redemption_code: this.redemptionCode,
-				tracking_data: {
-					...user.getCampaignTrackingData(),
-					...getAllUrlParams()
-				}
-			})
-			.then(response => {
-				const { data } = response;
-				if (data) {
-					this.replaceCartData(data);
-				}
-				onSuccess(data);
-			})
-			.catch(error => {
-				console.error(error);
-				onError(error);
-			});
+		const response = await Bigneon().cart.replace({
+			items,
+			redemption_code: this.redemptionCode,
+			tracking_data: {
+				...user.getCampaignTrackingData(),
+				...getAllUrlParams()
+			}
+		});
+		const { data } = response;
+		if (data) {
+			this.replaceCartData(data);
+		}
+		onSuccess(data);
 	}
 
 	@action
