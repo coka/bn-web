@@ -11,6 +11,7 @@ import NumberSelect from "../../elements/form/NumberSelect";
 import nl2br from "../../../helpers/nl2br";
 import { dollars } from "../../../helpers/money";
 import ColorTag from "../../elements/ColorTag";
+import cartValidateFields from "../../../helpers/cartValidateFields";
 
 class TicketSelection extends Component {
 	constructor(props) {
@@ -44,7 +45,9 @@ class TicketSelection extends Component {
 			discount_in_cents,
 			discount_as_percentage,
 			redemption_code,
-			eventIsCancelled
+			eventIsCancelled,
+			submitAttempted,
+			ticketSelection
 		} = this.props;
 		let { status } = this.props;
 		status = eventIsCancelled ? "Cancelled" : status;
@@ -183,7 +186,7 @@ class TicketSelection extends Component {
 								}
 
 								onNumberChange(newAmount);
-								validateFields();
+								cartValidateFields(submitAttempted, ticketSelection);
 							}}
 							onDecrement={() => {
 								const currentAmount = amount ? amount : 0;
@@ -193,7 +196,7 @@ class TicketSelection extends Component {
 								}
 
 								onNumberChange(newAmount);
-								validateFields();
+								cartValidateFields(submitAttempted, ticketSelection);
 							}}
 							available={amount < available}
 						>
@@ -239,11 +242,12 @@ TicketSelection.propTypes = {
 	amount: PropTypes.number,
 	increment: PropTypes.number.isRequired,
 	available: PropTypes.number.isRequired,
-	validateFields: PropTypes.func.isRequired,
 	limitPerPerson: PropTypes.number,
 	status: PropTypes.string.isRequired,
 	classes: PropTypes.object.isRequired,
-	eventIsCancelled: PropTypes.bool
+	eventIsCancelled: PropTypes.bool,
+	submitAttempted: PropTypes.bool.isRequired,
+	ticketSelection: PropTypes.object
 };
 
 const styles = theme => ({

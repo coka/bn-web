@@ -22,8 +22,7 @@ import {
 	secondaryHex,
 	fontFamily
 } from "../../../config/theme";
-import EventDetailsOverlayCard
-	from "../../elements/event/EventDetailsOverlayCard";
+import EventDetailsOverlayCard from "../../elements/event/EventDetailsOverlayCard";
 import Divider from "../../common/Divider";
 import orders from "../../../stores/orders";
 import tickets from "../../../stores/tickets";
@@ -39,6 +38,8 @@ import FormattedAdditionalInfo from "./FormattedAdditionalInfo";
 import getUrlParam from "../../../helpers/getUrlParam";
 import removeURLParam from "../../../helpers/removeURLParam";
 import TicketConfirmationSelection from "./TicketConfirmationSelection";
+import autoAddQuantity from "../../../helpers/autoAddQuantity";
+import replaceCart from "../../../helpers/replaceCart";
 
 const AUTO_SELECT_TICKET_AMOUNT = 2;
 
@@ -180,7 +181,7 @@ class CheckoutConfirmation extends Component {
 
 					if (!ticketSelection[type_id]) {
 						ticketSelection[type_id] = {
-							quantity: this.getAutoAddQuantity(index, ticket_types)
+							quantity: autoAddQuantity(index, ticket_types)
 						};
 					}
 				});
@@ -203,7 +204,7 @@ class CheckoutConfirmation extends Component {
 								//Auto add a ticket after refreshing the event tickets
 								if (!ticketSelection[type_id]) {
 									ticketSelection[type_id] = {
-										quantity: this.getAutoAddQuantity(i, types)
+										quantity: autoAddQuantity(i, types)
 									};
 								}
 							}
@@ -215,49 +216,6 @@ class CheckoutConfirmation extends Component {
 		} else {
 			this.setState({ ticketSelection });
 		}
-	}
-
-	//Determine the amount to auto add to cart based on increment, limit per person and available tickets
-	getAutoAddQuantity(index, ticketTypes) {
-		//Check if this ticket type is the only available one. If user has more than one option don't auto select.
-		let otherAvailableTickets = false;
-		ticketTypes.forEach((tt, ttIndex) => {
-			if (ttIndex !== index && tt.status === "Published") {
-				otherAvailableTickets = true;
-			}
-		});
-
-		if (otherAvailableTickets) {
-			return 0;
-		}
-
-		const { increment, limit_per_person, available, status } = ticketTypes[
-			index
-		];
-
-		//Check that the status of the ticket we
-		if (status !== "Published") {
-			return 0;
-		}
-
-		let quantity = AUTO_SELECT_TICKET_AMOUNT;
-
-		//If the default auto select amount is NOT divisible by the increment amount, rather auto select the first increment
-		if (AUTO_SELECT_TICKET_AMOUNT % increment != 0) {
-			quantity = increment;
-		}
-
-		//If limit_per_person is set don't allow auto selecting more than the user is allowed to buy
-		if (limit_per_person && quantity > limit_per_person) {
-			quantity = limit_per_person;
-		}
-
-		//Will first display `Sold out` for this rule anyways.
-		if (available < increment) {
-			quantity = 0;
-		}
-
-		return quantity;
 	}
 
 	checkForAbandonedCart(id) {
@@ -316,7 +274,7 @@ class CheckoutConfirmation extends Component {
 					//If they're checking out for a specific event then we have a custom success page for them
 					history.push(
 						`/tickets/${slug}/tickets/success${window.location.search ||
-						"?"}&order_id=${data.id}`
+							"?"}&order_id=${data.id}`
 					);
 				} else {
 					history.push(`/`); //TODO go straight to tickets when route is available
@@ -397,7 +355,7 @@ class CheckoutConfirmation extends Component {
 					//If they're checking out for a specific event then we have a custom success page for them
 					history.push(
 						`/tickets/${slug}/tickets/success${window.location.search ||
-						"?"}&order_id=${data.id}`
+							"?"}&order_id=${data.id}`
 					);
 				} else {
 					history.push(`/`); //TODO go straight to tickets when route is available
@@ -478,85 +436,16 @@ class CheckoutConfirmation extends Component {
 	}
 
 	replaceCart() {
-		const { id, event } = selectedEvent;
-		cart.setLatestEventId(id);
 		const { ticketSelection } = this.state;
-
 		this.submitAttempted = true;
-		if (!this.validateFields()) {
-			console.warn("Validation errors: ");
-			console.warn(this.state.errors);
-			return false;
-		}
-
-		if (!user.isAuthenticated) {
-			//Show dialog for the user to signup/login, try again on success
-			user.showAuthRequiredDialog(this.onSubmit.bind(this));
-			return;
-		}
-
-		let emptySelection = true;
-		Object.keys(ticketSelection).forEach(ticketTypeId => {
-			if (
-				ticketSelection[ticketTypeId] &&
-				ticketSelection[ticketTypeId].quantity > 0
-			) {
-				emptySelection = false;
-			}
-		});
-
-		//If the existing cart is empty and they haven't selected anything
-		if (cart.ticketCount === 0 && emptySelection) {
-			return notifications.show({
-				message: "Select tickets first."
-			});
-		}
-
-		cart.replace(
+		const history = this.props.history;
+		this.setState({ isSubmitting: true });
+		const addToCart = replaceCart(
+			true,
 			ticketSelection,
-			data => {
-				if (!emptySelection) {
-					const cartItems = [];
-					for (let i = 0; i < data.items.length; i++) {
-						if (data.items[i].item_type === "Tickets") {
-							cartItems.push({
-								eventId: event.id,
-								name: event.name,
-								category: event.event_type,
-								organizationId: event.organization_id,
-								ticketTypeName: data.items[i].description,
-								price: data.items[i].unit_price_in_cents / 100,
-								quantity: data.items[i].quantity
-							});
-						}
-					}
-					const total = data.total_in_cents / 100;
-					analytics.initiateCheckout(
-						event.id,
-						getAllUrlParams(),
-						"USD",
-						cartItems,
-						total
-					);
-					cart.refreshCart();
-				} else {
-					//They had something in their cart, but they removed and updated
-					this.setState({ isSubmitting: false });
-					cart.refreshCart();
-				}
-			},
-			error => {
-				this.setState({ isSubmitting: false });
-
-				const formattedError = notifications.showFromErrorResponse({
-					error,
-					defaultMessage: "Failed to add to cart.",
-					variant: "error"
-				});
-
-				console.error(formattedError);
-			}
+			history
 		);
+		this.setState({ isSubmitting: addToCart });
 	}
 
 	renderTickets() {
@@ -585,11 +474,11 @@ class CheckoutConfirmation extends Component {
 				ticketTypeId
 			} = item;
 
-			if(!cart.cartExpired) {
-				selectedTicketType = (ticket_types).find(o => o.id === ticketTypeId);
+			if (!cart.cartExpired) {
+				selectedTicketType = ticket_types.find(o => o.id === ticketTypeId);
 			}
 
-			if(selectedTicketType) {
+			if (selectedTicketType) {
 				const {
 					name,
 					ticket_pricing,
@@ -632,7 +521,9 @@ class CheckoutConfirmation extends Component {
 						ticketsAvailable={ticketsAvailable}
 						price_in_cents={price_in_cents}
 						error={errors[id]}
-						amount={ticketSelection ? ticketSelection[ticketTypeId].quantity : 0}
+						amount={
+							ticketSelection ? ticketSelection[ticketTypeId].quantity : 0
+						}
 						subTotal={`$ ${((pricePerTicketInCents / 100) * quantity).toFixed(
 							2
 						)}`}
@@ -643,17 +534,20 @@ class CheckoutConfirmation extends Component {
 						discount_as_percentage={discount_as_percentage}
 						redemption_code={redemption_code}
 						onNumberChange={amount => {
-							this.setState(({ ticketSelection }) => {
-								ticketSelection[ticketTypeId] = {
-									quantity: Number(amount) < 0 ? 0 : amount,
-									redemption_code
-								};
-								return {
-									ticketSelection
-								};
-							}, () => {
-								this.replaceCart();
-							});
+							this.setState(
+								({ ticketSelection }) => {
+									ticketSelection[ticketTypeId] = {
+										quantity: Number(amount) < 0 ? 0 : amount,
+										redemption_code
+									};
+									return {
+										ticketSelection
+									};
+								},
+								() => {
+									this.replaceCart();
+								}
+							);
 						}}
 						status={status}
 						eventIsCancelled={eventIsCancelled}
@@ -686,30 +580,18 @@ class CheckoutConfirmation extends Component {
 				<div className={classes.ticketLineTotalContainer}>
 					<TicketLineTotal
 						col1={(
-							<Link to={`/tickets/${id}`}
-								  onClick={this.clearCart}
-							>
-								<span
-									className={classes.backLink}
-								>Clear cart</span>
+							<Link to={`/tickets/${id}`} onClick={this.clearCart}>
+								<span className={classes.backLink}>Clear cart</span>
 							</Link>
 						)}
-						col2={(
-							<span
-								className={classes.subTotal}
-							>Service fees:</span>
-						)}
+						col2={<span className={classes.subTotal}>Service fees:</span>}
 						col3={`$${(serviceFeesInCents / 100).toFixed(2)}`}
 						classes={classes}
 					/>
 
 					<TicketLineTotal
 						col1={null}
-						col2={(
-							<span
-								className={classes.subTotal}
-							>Order total:</span>
-						)}
+						col2={<span className={classes.subTotal}>Order total:</span>}
 						col3={`$${(orderTotalInCents / 100).toFixed(2)}`}
 						classes={classes}
 					/>
@@ -770,17 +652,9 @@ class CheckoutConfirmation extends Component {
 			<div>
 				<TicketLineEntry
 					key={id}
-					col1={(
-						<span
-							className={classes.lintEntryTitle}
-						>Ticket</span>
-					)}
+					col1={<span className={classes.lintEntryTitle}>Ticket</span>}
 					col2={<span className={classes.lintEntryTitle}>Price</span>}
-					col3={(
-						<span
-							className={classes.lintEntryTitle}
-						>Subtotal</span>
-					)}
+					col3={<span className={classes.lintEntryTitle}>Subtotal</span>}
 					classes={classes}
 				/>
 
@@ -874,9 +748,7 @@ class CheckoutConfirmation extends Component {
 
 				{/*MOBILE*/}
 				<Hidden mdUp>
-					<div
-						className={classes.mobileContainer}
-					>{sharedContent}</div>
+					<div className={classes.mobileContainer}>{sharedContent}</div>
 				</Hidden>
 			</div>
 		);

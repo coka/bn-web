@@ -30,8 +30,8 @@ import analytics from "../../../helpers/analytics";
 import getAllUrlParams from "../../../helpers/getAllUrlParams";
 import ellipsis from "../../../helpers/ellipsis";
 import FormattedAdditionalInfo from "./FormattedAdditionalInfo";
-
-const AUTO_SELECT_TICKET_AMOUNT = 2;
+import autoAddQuantity from "../../../helpers/autoAddQuantity";
+import replaceCart from "../../../helpers/replaceCart";
 
 @observer
 class CheckoutSelection extends Component {
@@ -45,13 +45,14 @@ class CheckoutSelection extends Component {
 			ticketSelection: null,
 			isSubmitting: false,
 			isSubmittingPromo: false,
-			overlayCardHeight: 600,
-			expiredCode: false,
-			codeErrorMessage: ""
+			overlayCardHeight: 600
 		};
 	}
 
 	componentDidMount() {
+		const code = getUrlParam("code");
+		code ? (selectedEvent.currentlyAppliedCode = code) : null;
+
 		//If we have a current cart in the store already, load that right away
 		if (cart.items && cart.items.length > 0) {
 			this.setTicketSelectionFromExistingCart(cart.items);
@@ -90,55 +91,11 @@ class CheckoutSelection extends Component {
 					const { id: selectedEventId } = selectedEvent.event;
 
 					analytics.viewContent([selectedEventId], getAllUrlParams());
-
-					const code = getUrlParam("code");
-					code && this.onSubmitPromo(code);
 				}
 			);
 		} else {
 			//TODO return 404
 		}
-	}
-
-	//Determine the amount to auto add to cart based on increment, limit per person and available tickets
-	getAutoAddQuantity(index, ticketTypes) {
-		//Check if this ticket type is the only available one. If user has more than one option don't auto select.
-		let otherAvailableTickets = false;
-		ticketTypes.forEach((tt, ttIndex) => {
-			if (ttIndex !== index && tt.status === "Published") {
-				otherAvailableTickets = true;
-			}
-		});
-
-		if (otherAvailableTickets) {
-			return 0;
-		}
-
-		const { increment, limit_per_person, available, status } = ticketTypes[index];
-
-		//Check that the status of the ticket we
-		if (status !== "Published") {
-			return 0;
-		}
-
-		let quantity = AUTO_SELECT_TICKET_AMOUNT;
-
-		//If the default auto select amount is NOT divisible by the increment amount, rather auto select the first increment
-		if (AUTO_SELECT_TICKET_AMOUNT % increment != 0) {
-			quantity = increment;
-		}
-
-		//If limit_per_person is set don't allow auto selecting more than the user is allowed to buy
-		if (limit_per_person && quantity > limit_per_person) {
-			quantity = limit_per_person;
-		}
-
-		//Will first display `Sold out` for this rule anyways.
-		if (available < increment) {
-			quantity = 0;
-		}
-
-		return quantity;
 	}
 
 	setTicketSelectionFromExistingCart(items) {
@@ -159,7 +116,6 @@ class CheckoutSelection extends Component {
 
 		//Auto add one ticket if there is only one
 		const { ticket_types } = selectedEvent;
-
 		if (items === undefined || items.length === 0) {
 			if (ticket_types && ticket_types.length > 1) {
 				ticket_types.forEach((type, index) => {
@@ -167,7 +123,7 @@ class CheckoutSelection extends Component {
 
 					if (!ticketSelection[type_id]) {
 						ticketSelection[type_id] = {
-							quantity: this.getAutoAddQuantity(index, ticket_types)
+							quantity: autoAddQuantity(index, ticket_types)
 						};
 					}
 				});
@@ -190,7 +146,7 @@ class CheckoutSelection extends Component {
 								//Auto add a ticket after refreshing the event tickets
 								if (!ticketSelection[type_id]) {
 									ticketSelection[type_id] = {
-										quantity: this.getAutoAddQuantity(i, types)
+										quantity: autoAddQuantity(i, types)
 									};
 								}
 							}
@@ -202,42 +158,6 @@ class CheckoutSelection extends Component {
 		} else {
 			this.setState({ ticketSelection });
 		}
-	}
-
-	validateFields() {
-		//Don't validate every field if the user has not tried to submit at least once
-		if (!this.submitAttempted) {
-			return true;
-		}
-
-		const { ticketSelection } = this.state;
-		const { ticket_types } = selectedEvent;
-
-		const errors = {};
-
-		Object.keys(ticketSelection).forEach(ticketTypeId => {
-			const selectedTicketCount = ticketSelection[ticketTypeId];
-			if (selectedTicketCount && selectedTicketCount.quantity > 0) {
-				//Validate the user is buying in the correct increments
-				const ticketType = ticket_types.find(({ id }) => {
-					return id === ticketTypeId;
-				});
-
-				const increment = ticketType ? ticketType.increment : 1;
-
-				if (selectedTicketCount.quantity % increment !== 0) {
-					errors[ticketTypeId] = `Please order in increments of ${increment}`;
-				}
-			}
-		});
-
-		this.setState({ errors });
-
-		if (Object.keys(errors).length > 0) {
-			return false;
-		}
-
-		return true;
 	}
 
 	clearAppliedPromoCodes() {
@@ -252,7 +172,7 @@ class CheckoutSelection extends Component {
 					});
 				}
 
-				return { ticketSelection, expiredCode: false, codeErrorMessage: "" };
+				return { ticketSelection };
 			},
 			() => {
 				//Remove from ticket types in store
@@ -295,102 +215,28 @@ class CheckoutSelection extends Component {
 								}
 							});
 
-							return { ticketSelection, isSubmittingPromo: false, expiredCode: false, codeErrorMessage: ""  };
+							return { ticketSelection, isSubmittingPromo: false };
 						});
 					}
 				},
-				error => {
-					this.setState({
-						isSubmittingPromo: false,
-						expiredCode: error.expired && true,
-						codeErrorMessage: error.expired && error.expired
-					});
+				() => {
+					this.setState({ isSubmittingPromo: false });
 				}
 			);
 		});
 	}
 
 	onSubmit() {
-		const { id, event } = selectedEvent;
-		cart.setLatestEventId(id);
 		const { ticketSelection } = this.state;
-
 		this.submitAttempted = true;
-		if (!this.validateFields()) {
-			console.warn("Validation errors: ");
-			console.warn(this.state.errors);
-			return false;
-		}
-
-		if (!user.isAuthenticated) {
-			//Show dialog for the user to signup/login, try again on success
-			user.showAuthRequiredDialog(this.onSubmit.bind(this));
-			return;
-		}
-
-		let emptySelection = true;
-		Object.keys(ticketSelection).forEach(ticketTypeId => {
-			if (
-				ticketSelection[ticketTypeId] &&
-				ticketSelection[ticketTypeId].quantity > 0
-			) {
-				emptySelection = false;
-			}
-		});
-
-		//If the existing cart is empty and they haven't selected anything
-		if (cart.ticketCount === 0 && emptySelection) {
-			return notifications.show({
-				message: "Select tickets first."
-			});
-		}
-
+		const history = this.props.history;
 		this.setState({ isSubmitting: true });
-
-		cart.replace(
+		const addToCart = replaceCart(
+			true,
 			ticketSelection,
-			data => {
-				if (!emptySelection) {
-					const cartItems = [];
-					for (let i = 0; i < data.items.length; i++) {
-						if (data.items[i].item_type === "Tickets") {
-							cartItems.push({
-								eventId: event.id,
-								name: event.name,
-								category: event.event_type,
-								organizationId: event.organization_id,
-								ticketTypeName: data.items[i].description,
-								price: data.items[i].unit_price_in_cents / 100,
-								quantity: data.items[i].quantity
-							});
-						}
-					}
-					const total = data.total_in_cents / 100;
-					analytics.initiateCheckout(
-						event.id,
-						getAllUrlParams(),
-						"USD",
-						cartItems,
-						total
-					);
-					this.props.history.push(`/tickets/${id}/tickets/confirmation${window.location.search}`);
-				} else {
-					//They had something in their cart, but they removed and updated
-					this.setState({ isSubmitting: false });
-				}
-			},
-			error => {
-				this.setState({ isSubmitting: false });
-
-				const formattedError = notifications.showFromErrorResponse({
-					error,
-					defaultMessage: "Failed to add to cart.",
-					variant: "error"
-				});
-
-				console.error(formattedError);
-			}
+			history
 		);
+		this.setState({ isSubmitting: addToCart });
 	}
 
 	onOverlayCardHeightChange(overlayCardHeight) {
@@ -440,6 +286,8 @@ class CheckoutSelection extends Component {
 						? Math.min(available, limit_per_person)
 						: available;
 
+				this.submitAttempted = true;
+
 				return (
 					<TicketSelection
 						key={id}
@@ -466,7 +314,8 @@ class CheckoutSelection extends Component {
 								};
 							})
 						}
-						validateFields={this.validateFields.bind(this)}
+						submitAttempted={this.submitAttempted}
+						ticketSelection={ticketSelection}
 						status={status}
 						eventIsCancelled={eventIsCancelled}
 					/>
@@ -482,7 +331,7 @@ class CheckoutSelection extends Component {
 
 	render() {
 		const { classes } = this.props;
-		const { isSubmitting, isSubmittingPromo, ticketSelection, expiredCode, codeErrorMessage } = this.state;
+		const { isSubmitting, isSubmittingPromo, ticketSelection } = this.state;
 
 		const { event, venue, artists, organization, id } = selectedEvent;
 		const eventIsCancelled = !!(event && event.cancelled_at);
@@ -547,16 +396,14 @@ class CheckoutSelection extends Component {
 					{this.renderTicketPricing()}
 
 					<InputWithButton
-						value={selectedEvent.currentlyAppliedCode || selectedEvent.codeError}
+						value={selectedEvent.currentlyAppliedCode}
 						clearText={"Remove"}
 						onClear={this.clearAppliedPromoCodes.bind(this)}
 						successState={promoCodeApplied}
-						errorState={expiredCode}
-						errorMessage={codeErrorMessage}
 						showClearButton={promoCodeApplied}
 						iconUrl={promoCodeApplied ? "/icons/checkmark-active.svg" : null}
 						iconStyle={{ height: 15, width: "auto" }}
-						style={{ marginBottom: !expiredCode ? 20 : 5, marginTop: 20 }}
+						style={{ marginBottom: 20, marginTop: 20 }}
 						name={"promoCode"}
 						placeholder="Enter a promo code"
 						buttonText="Apply"
