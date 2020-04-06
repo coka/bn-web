@@ -7,7 +7,7 @@ import { withStyles } from "@material-ui/core";
 import Bigneon from "../../../helpers/bigneon";
 import notifications from "../../../stores/notifications";
 import Loader from "../../elements/loaders/Loader";
-import { sendReactNativeMessage } from "../../../helpers/reactNative";
+import { sendReactNativeMessage, MESSAGE_TYPES } from "../../../helpers/reactNative";
 
 const styles = theme => ({
 	root: { padding: theme.spacing.unit }
@@ -42,12 +42,13 @@ class MobileStripeAuth extends Component {
 			})
 			.catch(error => {
 				console.error(error);
-				window.postMessage(
-					JSON.stringify({
+				sendReactNativeMessage(
+					{
 						error:
 							"User could not be authenticated. " +
 							JSON.stringify(error.response)
-					})
+					},
+					MESSAGE_TYPES.STRIPE
 				);
 			});
 	}
@@ -59,7 +60,7 @@ class MobileStripeAuth extends Component {
 		try {
 			if (type === "card") {
 				sendReactNativeMessage(
-					JSON.stringify({
+					{
 						id: id,
 						type: type,
 						last4: data.last4,
@@ -68,7 +69,8 @@ class MobileStripeAuth extends Component {
 						exp_month: data.exp_month,
 						exp_year: data.exp_year,
 						name: data.name
-					})
+					},
+					MESSAGE_TYPES.STRIPE
 				);
 			}
 		}catch(e) {
@@ -79,7 +81,7 @@ class MobileStripeAuth extends Component {
 
 	onMobileError = (message, _type) => {
 		// If we receive a Stripe error, return it
-		sendReactNativeMessage(JSON.stringify({ error: message }));
+		sendReactNativeMessage({ error: message }, MESSAGE_TYPES.STRIPE);
 	};
 
 	render() {

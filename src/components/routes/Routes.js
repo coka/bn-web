@@ -187,7 +187,7 @@ class Routes extends Component {
 		if (startLoadTime) {
 			analytics.trackPageLoadTime(Date.now() - startLoadTime);
 		}
-		const { access_token, refresh_token, ...params } = getAllUrlParams();
+		const { access_token, refresh_token, rnNavigation, ...params } = getAllUrlParams();
 		if (refresh_token) {
 			try {
 				//Attempt to decode these, if they are not valid do not store them.
@@ -208,6 +208,11 @@ class Routes extends Component {
 			referrer: document.referrer,
 			...params
 		});
+		if (rnNavigation) {
+			localStorage.setItem("rnNavigation", "1");
+		} else if (rnNavigation === "0") {
+			localStorage.removeItem("rnNavigation");
+		}
 	}
 
 	componentDidCatch(error, errorInfo) {
