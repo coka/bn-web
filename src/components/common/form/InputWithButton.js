@@ -49,8 +49,7 @@ class InputWithButton extends Component {
 			clearText,
 			inputDisabled,
 			iconStyle,
-			errorState,
-			errorMessage
+			promoCodeError
 		} = this.props;
 
 		return (
@@ -59,11 +58,11 @@ class InputWithButton extends Component {
 					className={classNames({
 						[classes.root]: true,
 						[classes.successStateRoot]: successState,
-						[classes.errorStateRoot]: errorState
+						[classes.errorStateRoot]: promoCodeError
 					})}
 					style={style}
 				>
-					{(iconUrl && !errorState) ? (
+					{(iconUrl && !promoCodeError) ? (
 						<img
 							className={classes.icon}
 							style={iconStyle}
@@ -117,9 +116,9 @@ class InputWithButton extends Component {
 						</Typography>
 					</div>
 				</div>
-				{errorState && (
+				{promoCodeError && (
 					<Typography className={classes.error}>
-						{errorMessage}
+						{promoCodeError}
 					</Typography>
 				)}
 			</div>
@@ -148,8 +147,7 @@ InputWithButton.propTypes = {
 	onClear: PropTypes.func,
 	showClearButton: PropTypes.bool,
 	successState: PropTypes.bool,
-	errorState: PropTypes.bool,
-	errorMessage: PropTypes.string,
+	promoCodeError: PropTypes.string,
 	clearText: PropTypes.string,
 	iconStyle: PropTypes.object
 };

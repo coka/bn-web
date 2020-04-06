@@ -206,8 +206,8 @@ class SelectedEvent {
 					const inactiveTicketNames = [];
 
 					const promoCodeEndDateIsBeforeNow = moment.utc(data.end_date).isBefore(moment.utc());
-					const maxUsesAvailable = available !== max_uses;
-					const maxUsesforUserAvailable = user_purchased_ticket_count !== max_per_user;
+					const maxUsesAvailable = available < max_uses;
+					const maxUsesforUserAvailable = user_purchased_ticket_count === max_per_user;
 
 					//For promo codes (New data format)
 					if (data.ticket_types && typeof data.ticket_types === "object") {
@@ -251,12 +251,12 @@ class SelectedEvent {
 						});
 					} else {
 						if(promoCodeEndDateIsBeforeNow) {
-							onError({ "code": "This code has expired" });
+							onError({ "code": "This code has expired." });
 							this.currentlyAppliedCode = redemptionCode;
-						} else if(!maxUsesAvailable) {
+						} else if(available === 0 && maxUsesAvailable) {
 							onError({ "code": "Max uses for this code has been reached." });
 							this.currentlyAppliedCode = redemptionCode;
-						} else if(!maxUsesforUserAvailable) {
+						} else if(maxUsesforUserAvailable) {
 							onError({ "code": "You have reached the limit to use this code." });
 							this.currentlyAppliedCode = redemptionCode;
 						} else {

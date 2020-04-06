@@ -32,6 +32,7 @@ import ellipsis from "../../../helpers/ellipsis";
 import FormattedAdditionalInfo from "./FormattedAdditionalInfo";
 import autoAddQuantity from "../../../helpers/autoAddQuantity";
 import replaceCart from "../../../helpers/replaceCart";
+import TicketTypes from "./TicketTypes";
 
 @observer
 class CheckoutSelection extends Component {
@@ -45,7 +46,8 @@ class CheckoutSelection extends Component {
 			ticketSelection: null,
 			isSubmitting: false,
 			isSubmittingPromo: false,
-			overlayCardHeight: 600
+			overlayCardHeight: 600,
+			promoCodeError: null
 		};
 	}
 
@@ -191,6 +193,9 @@ class CheckoutSelection extends Component {
 				);
 			}
 		);
+
+		//Clear promo code error
+		this.setState( { promoCodeError: null });
 	}
 
 	onSubmitPromo(code) {
@@ -219,8 +224,11 @@ class CheckoutSelection extends Component {
 						});
 					}
 				},
-				() => {
-					this.setState({ isSubmittingPromo: false });
+				error => {
+					this.setState({
+						isSubmittingPromo: false,
+						promoCodeError: error ? error.code : null
+					});
 				}
 			);
 		});
@@ -245,94 +253,19 @@ class CheckoutSelection extends Component {
 	}
 
 	renderTicketPricing() {
-		const { event, ticket_types } = selectedEvent;
 		const { ticketSelection, errors } = this.state;
-		if (!ticket_types) {
-			return <Loader>Loading tickets...</Loader>;
-		}
 
-		const eventIsCancelled = !!(event && event.cancelled_at);
-
-		const ticketTypeRendered = ticket_types
-			.map(ticketType => {
-				const {
-					id,
-					name,
-					ticket_pricing,
-					increment,
-					limit_per_person,
-					start_date,
-					end_date,
-					redemption_code,
-					available,
-					description,
-					discount_as_percentage,
-					status
-				} = ticketType;
-
-				let price_in_cents;
-				let ticketsAvailable = false;
-				let discount_in_cents = 0;
-				if (ticket_pricing) {
-					price_in_cents = ticket_pricing.price_in_cents;
-					ticketsAvailable = available > 0;
-					discount_in_cents = ticket_pricing.discount_in_cents || 0;
-				} else {
-					//description = "(Tickets currently unavailable)";
-				}
-
-				//0 is returned for limit_per_person when there is no limit
-				const limitPerPerson =
-					limit_per_person > 0
-						? Math.min(available, limit_per_person)
-						: available;
-
-				this.submitAttempted = true;
-
-				return (
-					<TicketSelection
-						key={id}
-						name={name}
-						description={description}
-						ticketsAvailable={ticketsAvailable}
-						price_in_cents={price_in_cents}
-						error={errors[id]}
-						amount={ticketSelection[id] ? ticketSelection[id].quantity : 0}
-						increment={increment}
-						limitPerPerson={limitPerPerson}
-						available={available}
-						discount_in_cents={discount_in_cents}
-						discount_as_percentage={discount_as_percentage}
-						redemption_code={redemption_code}
-						onNumberChange={amount =>
-							this.setState(({ ticketSelection }) => {
-								ticketSelection[id] = {
-									quantity: Number(amount) < 0 ? 0 : amount,
-									redemption_code
-								};
-								return {
-									ticketSelection
-								};
-							})
-						}
-						submitAttempted={this.submitAttempted}
-						ticketSelection={ticketSelection}
-						status={status}
-						eventIsCancelled={eventIsCancelled}
-					/>
-				);
-			})
-			.filter(item => !!item);
-
-		if (!ticketTypeRendered.length) {
-			return null;
-		}
-		return ticketTypeRendered;
+		return (
+			<TicketTypes
+				ticketSelection={ticketSelection}
+				errors={errors}
+			/>
+		);
 	}
 
 	render() {
 		const { classes } = this.props;
-		const { isSubmitting, isSubmittingPromo, ticketSelection } = this.state;
+		const { isSubmitting, isSubmittingPromo, ticketSelection, promoCodeError } = this.state;
 
 		const { event, venue, artists, organization, id } = selectedEvent;
 		const eventIsCancelled = !!(event && event.cancelled_at);
@@ -404,7 +337,7 @@ class CheckoutSelection extends Component {
 						showClearButton={promoCodeApplied}
 						iconUrl={promoCodeApplied ? "/icons/checkmark-active.svg" : null}
 						iconStyle={{ height: 15, width: "auto" }}
-						style={{ marginBottom: 20, marginTop: 20 }}
+						style={{ marginBottom: promoCodeError ? 10 : 20, marginTop: 20 }}
 						name={"promoCode"}
 						placeholder="Enter a promo code"
 						buttonText="Apply"
@@ -412,6 +345,7 @@ class CheckoutSelection extends Component {
 						disabled={isSubmittingPromo}
 						inputDisabled={promoCodeApplied}
 						toUpperCase
+						promoCodeError={promoCodeError}
 					/>
 
 					<Button

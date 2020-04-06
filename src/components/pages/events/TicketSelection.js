@@ -37,17 +37,18 @@ class TicketSelection extends Component {
 			description,
 			price_in_cents,
 			amount,
+			subTotal,
 			increment,
 			available,
 			onNumberChange,
-			validateFields,
 			limitPerPerson,
 			discount_in_cents,
 			discount_as_percentage,
 			redemption_code,
 			eventIsCancelled,
 			submitAttempted,
-			ticketSelection
+			ticketSelection,
+			checkOut
 		} = this.props;
 		let { status } = this.props;
 		status = eventIsCancelled ? "Cancelled" : status;
@@ -125,108 +126,200 @@ class TicketSelection extends Component {
 				break;
 		}
 
-		return (
-			<div>
-				<Grid alignItems="center" className={classes.container} container>
-					{redemption_code ? (
-						<Grid item xs={12} sm={12} md={12} lg={12}>
-							<Typography className={classes.promoAppliedText}>
-								{discount_message ? discount_message : "Code applied"}
-							</Typography>
-						</Grid>
-					) : null}
-
-					<Grid item xs={3} sm={3} md={4} lg={3}>
-						<Typography
-							className={classnames({
-								[classes.price]: true,
-								[classes.priceActive]: true
-							})}
-						>
-							{priceDisplay}
-						</Typography>
-					</Grid>
+		if(checkOut) {
+			return (
+				<div>
 					<Grid
-						item
-						xs={5}
-						sm={6}
-						md={5}
-						lg={6}
-						className={classes.detailContainer}
+						alignItems="center"
+						className={classes.container}
+						container
 					>
-						<Typography className={classes.name}>{name}</Typography>
-						<Typography variant="caption" style={{ color: "red" }}>
-							{lppText}
-						</Typography>
-						{description && !discount_in_cents ? (
-							<Typography
-								className={classes.readMoreLessText}
-								onClick={this.readMoreLess.bind(this)}
-							>
-								{showDescription ? "Read Less" : "Read More"}
-							</Typography>
+						{redemption_code ? (
+							<Grid item xs={12} sm={12} md={12} lg={12}>
+								<Typography className={classes.promoAppliedText}>
+									{discount_message ? discount_message : "Code applied"}
+								</Typography>
+							</Grid>
 						) : null}
-					</Grid>
 
-					<Grid
-						item
-						xs={4}
-						sm={3}
-						md={3}
-						lg={3}
-						className={classes.ticketSelectionContainer}
-					>
-						<NumberSelect
-							onIncrement={() => {
-								const currentAmount = amount ? amount : 0;
-								let newAmount = Number(currentAmount) + increment;
-
-								if (limitPerPerson && newAmount > limitPerPerson) {
-									newAmount = limitPerPerson;
-								}
-
-								onNumberChange(newAmount);
-								cartValidateFields(submitAttempted, ticketSelection);
-							}}
-							onDecrement={() => {
-								const currentAmount = amount ? amount : 0;
-								let newAmount = Number(currentAmount) - increment;
-								if (newAmount < 0) {
-									newAmount = 0;
-								}
-
-								onNumberChange(newAmount);
-								cartValidateFields(submitAttempted, ticketSelection);
-							}}
-							available={amount < available}
-						>
-							{amount}
-						</NumberSelect>
-					</Grid>
-				</Grid>
-
-				{showDescription ? (
-					<Grid justify="flex-end" alignItems="flex-end" container>
 						<Grid
 							item
-							xs={9}
-							sm={9}
-							md={8}
-							lg={9}
+							xs={6}
+							sm={6}
+							md={2}
+							lg={2}
+							className={classes.ticketSelectionContainer}
+						>
+							<NumberSelect
+								onIncrement={() => {
+									const currentAmount = amount ? amount : 0;
+									let newAmount = Number(currentAmount) + increment;
+
+									if (limitPerPerson && newAmount > limitPerPerson) {
+										newAmount = limitPerPerson;
+									}
+
+									if (newAmount <= available) {
+										onNumberChange(newAmount);
+									}
+								}}
+								onDecrement={() => {
+									const currentAmount = amount ? amount : 0;
+									let newAmount = Number(currentAmount) - increment;
+									if (newAmount < 0) {
+										newAmount = 0;
+									}
+									onNumberChange(newAmount);
+								}}
+								available={amount < available}
+							>
+								{amount}
+							</NumberSelect>
+						</Grid>
+						<Grid
+							item
+							xs={3}
+							sm={3}
+							md={5}
+							lg={6}
 							className={classes.detailContainer}
 						>
 							{description ? (
-								<Typography className={classes.description}>
-									{nl2br(description)}
+								<Typography className={classes.name}>
+									{description}
+								</Typography>
+							) : null}
+							<Typography variant="caption" style={{ color: "red" }}>
+								{lppText}
+							</Typography>
+						</Grid>
+						<Grid item xs={3} sm={3} md={2} lg={2}>
+							<Typography
+								className={classnames({
+									[classes.lineEntryText]: true
+								})}
+							>
+								{priceDisplay}
+							</Typography>
+						</Grid>
+						<Grid item xs={3} sm={3} md={3} lg={2}>
+							<Typography
+								className={classnames({
+									[classes.lineEntryText]: true
+								})}
+							>
+								{subTotal}
+							</Typography>
+						</Grid>
+					</Grid>
+
+					<Divider style={{ margin: 0 }}/>
+				</div>
+			);
+		} else {
+			return (
+				<div>
+					<Grid alignItems="center" className={classes.container} container>
+						{redemption_code ? (
+							<Grid item xs={12} sm={12} md={12} lg={12}>
+								<Typography className={classes.promoAppliedText}>
+									{discount_message ? discount_message : "Code applied"}
+								</Typography>
+							</Grid>
+						) : null}
+
+						<Grid item xs={3} sm={3} md={4} lg={3}>
+							<Typography
+								className={classnames({
+									[classes.price]: true,
+									[classes.priceActive]: true
+								})}
+							>
+								{priceDisplay}
+							</Typography>
+						</Grid>
+						<Grid
+							item
+							xs={5}
+							sm={6}
+							md={5}
+							lg={6}
+							className={classes.detailContainer}
+						>
+							<Typography className={classes.name}>{name}</Typography>
+							<Typography variant="caption" style={{ color: "red" }}>
+								{lppText}
+							</Typography>
+							{description && !discount_in_cents ? (
+								<Typography
+									className={classes.readMoreLessText}
+									onClick={this.readMoreLess.bind(this)}
+								>
+									{showDescription ? "Read Less" : "Read More"}
 								</Typography>
 							) : null}
 						</Grid>
-					</Grid>
-				) : null}
 
-				<Divider style={{ margin: 0 }}/>
-			</div>
-		);
+						<Grid
+							item
+							xs={4}
+							sm={3}
+							md={3}
+							lg={3}
+							className={classes.ticketSelectionContainer}
+						>
+							<NumberSelect
+								onIncrement={() => {
+									const currentAmount = amount ? amount : 0;
+									let newAmount = Number(currentAmount) + increment;
+
+									if (limitPerPerson && newAmount > limitPerPerson) {
+										newAmount = limitPerPerson;
+									}
+
+									onNumberChange(newAmount);
+									cartValidateFields(submitAttempted, ticketSelection);
+								}}
+								onDecrement={() => {
+									const currentAmount = amount ? amount : 0;
+									let newAmount = Number(currentAmount) - increment;
+									if (newAmount < 0) {
+										newAmount = 0;
+									}
+
+									onNumberChange(newAmount);
+									cartValidateFields(submitAttempted, ticketSelection);
+								}}
+								available={amount < available}
+							>
+								{amount}
+							</NumberSelect>
+						</Grid>
+					</Grid>
+
+					{showDescription ? (
+						<Grid justify="flex-end" alignItems="flex-end" container>
+							<Grid
+								item
+								xs={9}
+								sm={9}
+								md={8}
+								lg={9}
+								className={classes.detailContainer}
+							>
+								{description ? (
+									<Typography className={classes.description}>
+										{nl2br(description)}
+									</Typography>
+								) : null}
+							</Grid>
+						</Grid>
+					) : null}
+
+					<Divider style={{ margin: 0 }}/>
+				</div>
+			);
+		}
 	}
 }
 
@@ -247,7 +340,9 @@ TicketSelection.propTypes = {
 	classes: PropTypes.object.isRequired,
 	eventIsCancelled: PropTypes.bool,
 	submitAttempted: PropTypes.bool.isRequired,
-	ticketSelection: PropTypes.object
+	ticketSelection: PropTypes.object,
+	subTotal: PropTypes.string,
+	checkOut: PropTypes.bool
 };
 
 const styles = theme => ({
